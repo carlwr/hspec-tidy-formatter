@@ -1,0 +1,50 @@
+#!/usr/bin/env zsh
+# print invocation commands, then run cabal to produce terminal output
+#
+# usage:
+#   $0 <formatter>
+
+set -ue
+
+formatter=$1
+component=readme-example
+
+color () print -nP %F\{$1\}$2%f
+nl    () print
+prompt() color 7 '$  '
+cursor() print '█'
+
+printCommands() {
+  case $formatter in
+    (tidy)
+            prompt && color 8 '# stack test --test-arguments=--format=tidy'
+      nl && prompt && color 8 '# cabal test --test-options=--format=tidy'
+      nl && prompt && color 7 'hspec --format=' && color 15 'tidy'
+      nl
+      ;;
+    (checks)
+            prompt && color 8 '# stack test'
+      nl && prompt && color 8 '# cabal test'
+      nl && prompt && color 7 'hspec'
+      nl
+      ;;
+    (*)
+      print "unknown formatter: ${formatter}" && exit 1
+      ;;
+  esac
+  nl
+  }
+
+runCabal() {
+  export BUILDKITE=true
+    # hack/workaround: makes hspec disable transient output
+  cabal test ${component} -v0 \
+	  --test-options=--format=${formatter}
+  }
+
+# --------------
+printCommands
+runCabal
+nl
+prompt && cursor
+# --------------

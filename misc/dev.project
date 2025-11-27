@@ -1,0 +1,9 @@
+with-compiler: ghc-9.12.2
+-- with-compiler: ghc-9.4.8
+-- with-compiler: ghc-8.10.7  -- llvm error
+
+package hspec-tidy-formatter
+  flags: +doctest +suppress-module-prefixes
+
+tests: True
+test-show-details: direct

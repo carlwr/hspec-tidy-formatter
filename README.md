@@ -81,7 +81,7 @@ spec = it "adds" $ 1+1 `shouldBe` (2::Int)
 * honors most `hspec` options, including: `--times`, `--no-unicode`, `--no-color`, `--print-cpu-time`, `--print-slow-items=[=N]`
 
 #### NOTE:
-`hspec` allows test runners to pass it additional text together with the outcome of each test. This formatter, by default, prints such text only if it spans more than one line. To instead always print all such text unconditionally, use the `--times` option. E.g. with [`hspec-hedgehog`], which passes the number of tests run for each item as a single line of text:
+`hspec` allows test runners to pass it additional text together with the outcome of each test. This formatter, by default, prints such text only if it spans more than one line. To instead always print all such text unconditionally, use `--times` (default: `--no-times`). E.g. with [`hspec-hedgehog`], which passes the number of tests run for each item as a single line of text:
 
 ```diff
 - $  hspec --format=tidy
@@ -93,6 +93,7 @@ spec = it "adds" $ 1+1 `shouldBe` (2::Int)
 +     [✔] Identity  (5ms) (passed 100 tests.)
 ```
 
+To instead _suppress_ the printing of any additional text from the test runner, use `--expert` (default: `--no-expert`).
 
 
 <!-- links -->

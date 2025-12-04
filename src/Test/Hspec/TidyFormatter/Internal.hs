@@ -46,20 +46,21 @@ type Indentation = [Group]  -- [Group] when used to determine indentation
 
 
 --
--- `Chunks`
+-- Chunks and Lines
 --
 
 type WithFormat = Endo (FormatM ())
 
-{- | A sequence of text fragments to be written to the terminal
-
-Chunks:    full line or part thereof
-[Chunks]:  lines, in the String/[String]/lines/unlines sense
+{- |
+'Chunks': a sequence of text fragments to be written to the terminal; constitutes a full line or part of a line
+'Lines' : a list of 'Chunks' with each element representing one printed line of text, in the String/[String]/lines/unlines sense
 
 Neither ever contains \n-s.
 
 > Chunks ~ Silenceable FormatM String
+
 -}
+
 type Chunks = Parts WithFormat String
 
 chunk :: String -> Chunks
@@ -142,10 +143,10 @@ mkInfo :: ItemInfo -> InfoChunks
 mkInfo str =
   let z = InfoChunks empty []
   in
-    case lines str of
-      []  -> z
-      [l] -> z{ ifOneline   = fmtOne l `onlyIf` isVerbose }
-      ls  -> z{ ifMultiline = fmtMulti <$> ls }
+  case lines str of
+    []  -> z
+    [l] -> z{ ifOneline   = fmtOne l `onlyIf` isVerbose }
+    ls  -> z{ ifMultiline = fmtMulti <$> ls }
   where
     fmtOne   s = chunk (" (" <> s <> ")") `with` (<>infoColor)
     fmtMulti s = chunk ("  " <> s       ) `with` (<>infoColor)
@@ -178,6 +179,11 @@ mkBox unicode ascii f = "[" <> marker <> "] "
       ifThenElse Api.outputUnicode
         (chunk [unicode] `with` (<>f))
         (chunk [ascii  ] `with` (<>f))
+
+
+--
+-- Api shorthands
+--
 
 infoColor :: WithFormat
 pendColor :: WithFormat

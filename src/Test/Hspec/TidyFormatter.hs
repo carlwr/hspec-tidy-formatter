@@ -4,13 +4,17 @@ License     : MIT
 -}
 
 module Test.Hspec.TidyFormatter
-( -- * Formatter
+(
+  -- * Formatter
   use
 , register
 , formatter
+
   -- * Re-exported API
 , module Test.Hspec.Api.Formatters.V3
+
 ) where
+
 
 import Test.Hspec.TidyFormatter.Internal qualified as Internal
 import Test.Hspec.Api.Formatters.V3

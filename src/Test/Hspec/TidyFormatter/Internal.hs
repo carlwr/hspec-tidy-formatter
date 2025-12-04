@@ -48,8 +48,6 @@ type Indentation = [Group]  -- [Group] when used to determine indentation
 -- Chunks and Lines
 --
 
-type WithFormat = Endo (FormatM ())
-
 {- |
 'Chunks': a sequence of text fragments to be written to the terminal; constitutes a full line or part of a line
 'Lines' : a list of 'Chunks' with each element representing one printed line of text, in the String/[String]/lines/unlines sense
@@ -60,7 +58,10 @@ Neither ever contains \n-s.
 
 -}
 
+type WithFormat = Endo (FormatM ())
+
 type Chunks = Parts WithFormat String
+type Lines  = [Chunks]
 
 chunk :: String -> Chunks
 chunk = string . filter (/='\n')
@@ -74,7 +75,7 @@ chunk = string . filter (/='\n')
 
 type TransientString = String
 
-write :: Indentation -> [Chunks] -> FormatM ()
+write :: Indentation -> Lines -> FormatM ()
 write gs = run Api.write . vsep . unlines'
   where
     unlines' = foldMap mkLine
@@ -98,13 +99,13 @@ transient gs =
 -- Handlers
 --
 
-groupStarted :: Group -> [Chunks]
+groupStarted :: Group -> Lines
 groupStarted group = [chunk group]
 
 itemStarted :: Req -> TransientString
 itemStarted req = "[ ] " ++ req
 
-itemDone :: Req -> Api.Item -> [Chunks]
+itemDone :: Req -> Api.Item -> Lines
 itemDone req itm =
   [ box <> chunk req <> duration <> ifOneline info  ]
   ++ pending
@@ -132,8 +133,8 @@ progress (now,total) = "[" ++ str ++ "]"
 --
 
 data Info = Info
-  { ifOneline   ::  Chunks
-  , ifMultiline :: [Chunks]
+  { ifOneline   :: Chunks
+  , ifMultiline :: Lines
   }
 
 mkInfo :: ItemInfo -> Info
@@ -147,7 +148,7 @@ mkInfo str =
     one   s = chunk (" (" <> s <> ")") `with` (<>infoColor)
     multi s = chunk ("  " <> s       ) `with` (<>infoColor)
 
-mkPending :: Maybe String -> [Chunks]
+mkPending :: Maybe String -> Lines
 mkPending mb =
   extraInd . mapAnn (<> pendColor) . chunk <$>
   case lines <$> mb of
@@ -181,10 +182,12 @@ mkBox unicode ascii color = "[" <> marker <> "] "
 -- Api shorthands
 --
 
-infoColor :: WithFormat
-pendColor :: WithFormat
-succColor :: WithFormat
-failColor :: WithFormat
+type Color = WithFormat
+
+infoColor :: Color
+pendColor :: Color
+succColor :: Color
+failColor :: Color
 
 infoColor = Endo Api.withInfoColor
 pendColor = Endo Api.withPendingColor

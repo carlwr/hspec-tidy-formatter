@@ -74,7 +74,7 @@ spec :: Spec
 spec = it "adds" $ 1+1 `shouldBe` (2::Int)
 ```
 
-## Functionality
+## Functionality, options
 
 * supports transient output/progress
 

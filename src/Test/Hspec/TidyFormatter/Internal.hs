@@ -145,12 +145,12 @@ mkInfo str =
     ls  -> z{ ifMultiline = multi <$> ls }
   where
     z       = Info empty []
-    one   s = chunk (" (" <> s <> ")") `with` (<>infoColor)
-    multi s = chunk ("  " <> s       ) `with` (<>infoColor)
+    one   s = chunk (" (" <> s <> ")") `with` infoColor
+    multi s = chunk ("  " <> s       ) `with` infoColor
 
 mkPending :: Maybe String -> Lines
 mkPending mb =
-  extraInd . mapAnn (<> pendColor) . chunk <$>
+  extraInd . mapAnn pendColor . chunk <$>
   case lines <$> mb of
     Nothing -> [ "# PENDING"   ]
     Just ls -> ( "# PENDING: "
@@ -162,37 +162,37 @@ mkPending mb =
 mkDuration :: Api.Seconds -> Chunks
 mkDuration (Api.Seconds secs) =
   maybeEmpty (chunk <$> mbStr)
-    `with`   (<> infoColor)
+    `with`   infoColor
     `onlyIf` Api.printTimes
   where
     mbStr = case floor (secs * 1000) of
       0  -> Nothing
       ms -> Just $ ("  (" ++ show ms ++ "ms)")
 
-mkBox :: Char -> Char -> WithFormat -> Chunks
+mkBox :: Char -> Char -> Color -> Chunks
 mkBox unicode ascii color = "[" <> marker <> "] "
   where
     marker =
       ifThenElse Api.outputUnicode
-        (chunk [unicode] `with` (<>color))
-        (chunk [ascii  ] `with` (<>color))
+        (chunk [unicode] `with` color)
+        (chunk [ascii  ] `with` color)
 
 
 --
 -- Api shorthands
 --
 
-type Color = WithFormat
+type Color = WithFormat -> WithFormat
 
 infoColor :: Color
 pendColor :: Color
 succColor :: Color
 failColor :: Color
 
-infoColor = Endo Api.withInfoColor
-pendColor = Endo Api.withPendingColor
-succColor = Endo Api.withSuccessColor
-failColor = Endo Api.withFailColor
+infoColor = (<> Endo Api.withInfoColor   )
+pendColor = (<> Endo Api.withPendingColor)
+succColor = (<> Endo Api.withSuccessColor)
+failColor = (<> Endo Api.withFailColor   )
 
 isVerbose :: FormatM Bool
 isVerbose = Api.printTimes

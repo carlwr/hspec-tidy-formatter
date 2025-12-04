@@ -84,8 +84,11 @@ spec = it "adds" $ 1+1 `shouldBe` (2::Int)
 
 * honors most `hspec` options, including: `--times`, `--no-unicode`, `--no-color`, `--print-cpu-time`, `--print-slow-items=[=N]`
 
-#### NOTE:
-`hspec` allows test runners to pass it additional text together with the outcome of each test. This formatter, by default, prints such text only if it spans more than one line. To instead always print all such text unconditionally, use the `--times` option. E.g. with [`hspec-hedgehog`], which passes the number of tests run for each item as a single line of text:
+### Printing of additional text from test runners
+
+`hspec` allows test runners to pass it additional text together with the outcome of each test. This formatter, by default, prints such text only if it spans more than one line. To instead print all such text unconditionally, use `--times` (default: `--no-times`). This will additionally do what this option is originally supposed to do: print the execution time for spec items (if `> 0` after rounding to milliseconds).
+
+E.g. with [`hspec-hedgehog`], which passes the number of tests run for each item as a single line of text:
 
 ```diff
 - $  hspec --format=tidy
@@ -94,9 +97,66 @@ spec = it "adds" $ 1+1 `shouldBe` (2::Int)
   [...]
     is Applicative-lawful per
 -     [✔] Identity
-+     [✔] Identity  (5ms) (passed 100 tests.)
++     [✔] Identity  (21ms) (passed 100 tests.)
 ```
 
+To instead _suppress_ the printing of any additional text from the test runner, use `--expert` (default: `--no-expert`).
+
+### Verbosity switches `--[no-]expert`, `--[no-]times` combinations
+
+_For two spec items whose test runner returns a single line, and a few lines, respectively, of additional text:_
+
+```
+===========       =========================================
+<ARGS>            `hspec <ARGS>` example output
+===========       =========================================
+
+
+                                             (most verbose)
+
+
+-----------       -----------------------------------------
+--times           [✔] Identity  (21ms) (passed 100 tests.)
+--no-expert       [✔] Hedgehog generator  (49ms)
+                    passed 100 tests.
+                      n:   0       1% ▏···················
+                      n:   1- 4    5% █···················
+                      n:   5-19   16% ███▏················
+
+
+-----------       -----------------------------------------
+--no-times        [✔] Identity
+--no-expert       [✔] Hedgehog generator
+(DEFAULT)           passed 100 tests.
+                      n:   0       1% ▏···················
+                      n:   1- 4    5% █···················
+                      n:   5-19   16% ███▏················
+
+
+-----------       -----------------------------------------
+--times           [✔] Identity  (21ms)
+--expert          [✔] Hedgehog generator  (49ms)
+
+
+-----------       -----------------------------------------
+--no-times        [✔] Identity
+--expert          [✔] Hedgehog generator
+
+
+                                            (least verbose)
+
+```
+<!-- zsh command to produce material for the table:
+foreach e (--no-expert --expert) {
+foreach t (--times --no-times) {
+  echo $t
+  echo $e
+  command cabal -v0 test test:readme-example --test-options="--no-color --format=tidy $t $e" \
+  | awk "NR==6 || (NR>=18 && NR<=22)" \
+  | grep -P '^ '
+  echo
+} }
+-->
 
 
 <!-- links -->

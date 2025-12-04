@@ -154,7 +154,7 @@ type Info = Info' WithFormat
 
 mkInfo :: ItemInfo -> Info
 mkInfo str =
-  infoColor <$>
+  unlessExpert . infoColor <$>
   case lines str of
     []  -> z
     [l] -> z{ ifOneline   =       (one   $ l ) `onlyIf` isVerbose }
@@ -214,6 +214,9 @@ failColor = (<> Endo Api.withFailColor   )
 isVerbose :: FormatM Bool
 isVerbose = Api.printTimes
   -- borrow '--times' as verbosity switch since that gives non-verbose by default, which is what we want (using '--expert' would give _verbose_ by default)
+
+unlessExpert :: WithFormat -> WithFormat
+unlessExpert = (<> Endo Api.unlessExpert)
 
 whenReportProgress :: FormatM () -> FormatM ()
 whenReportProgress = whenM (Api.getConfigValue Api.formatConfigReportProgress)

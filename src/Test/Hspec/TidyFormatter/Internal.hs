@@ -14,7 +14,6 @@ import Test.Hspec.TidyFormatter.Internal.Parts
 import Test.Hspec.Api.Formatters.V3 qualified as Api
 import Test.Hspec.Api.Formatters.V3 (Formatter, FormatM)
 import Data.Monoid (Endo (..))
-import Data.List (find)
 import Control.Monad (when)
 
 
@@ -88,10 +87,11 @@ write gs = run Api.write . vsep . unlines'
 
 transient :: Indentation -> TransientString -> FormatM ()
 transient gs =
-  whenM (Api.getConfigValue Api.formatConfigReportProgress)
-  . Api.writeTransient
+  writeTransient
   . (indentationStr gs ++)
   . filter (/='\n')
+  where
+    writeTransient = whenReportProgress . Api.writeTransient
 
 
 --
@@ -107,11 +107,8 @@ itemStarted req = "[ ] " ++ req
 itemDone :: Req -> Api.Item -> [Chunks]
 itemDone req itm =
   [ box <> chunk req <> duration <> ifOneline info  ]
-  ++
-  firstNonEmptyOf
-    [ pending
-    , ifMultiline info
-    ]
+  ++ pending
+  ++ ifMultiline info
   where
     duration = mkDuration (Api.itemDuration itm)
     info     = mkInfo     (Api.itemInfo     itm)
@@ -141,13 +138,12 @@ data Info = Info
 
 mkInfo :: ItemInfo -> Info
 mkInfo str =
-  let z = Info empty []
-  in
   case lines str of
     []  -> z
     [l] -> z{ ifOneline   = one l `onlyIf` isVerbose }
     ls  -> z{ ifMultiline = multi <$> ls }
   where
+    z       = Info empty []
     one   s = chunk (" (" <> s <> ")") `with` (<>infoColor)
     multi s = chunk ("  " <> s       ) `with` (<>infoColor)
 
@@ -199,6 +195,9 @@ isVerbose :: FormatM Bool
 isVerbose = Api.printTimes
   -- borrow '--times' as verbosity switch since that gives non-verbose by default, which is what we want (using '--expert' would give _verbose_ by default)
 
+whenReportProgress :: FormatM () -> FormatM ()
+whenReportProgress = whenM (Api.getConfigValue Api.formatConfigReportProgress)
+
 
 --
 -- Misc
@@ -219,12 +218,6 @@ whenM :: Monad m => m Bool -> m () -> m ()
 whenM bM action = do
   b <- bM
   when b action
-
-firstNonEmptyOf :: [[a]] -> [a]
-firstNonEmptyOf xss =
-  case find (not . null) xss of
-    Just xs -> xs
-    _       -> []
 
 
 --

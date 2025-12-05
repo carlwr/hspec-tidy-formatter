@@ -2,6 +2,9 @@
 
 _A custom [`hspec`] formatter for terminal output._
 
+![GitHub License](https://img.shields.io/github/license/carlwr/hspec-tidy-formatter)
+![Hackage Version](https://img.shields.io/hackage/v/hspec-tidy-formatter)
+
 <br>
 
 <p align="center">
@@ -74,14 +77,18 @@ spec :: Spec
 spec = it "adds" $ 1+1 `shouldBe` (2::Int)
 ```
 
+
 ## Functionality, options
 
 * supports transient output/progress
 
 * honors most `hspec` options, including: `--times`, `--no-unicode`, `--no-color`, `--print-cpu-time`, `--print-slow-items=[=N]`
 
-#### NOTE:
-`hspec` allows test runners to pass it additional text together with the outcome of each test. This formatter, by default, prints such text only if it spans more than one line. To instead always print all such text unconditionally, use `--times` (default: `--no-times`). E.g. with [`hspec-hedgehog`], which passes the number of tests run for each item as a single line of text:
+### Printing of additional text from test runners
+
+`hspec` allows test runners to pass it additional text together with the outcome of each test. This formatter, by default, prints such text only if it spans more than one line. To instead print all such text unconditionally, use `--times` (default: `--no-times`). This will additionally do what this option is originally supposed to do: print the execution time for spec items (if `> 0` after rounding to milliseconds).
+
+E.g. with [`hspec-hedgehog`], which passes the number of tests run for each item as a single line of text:
 
 ```diff
 - $  hspec --format=tidy
@@ -90,7 +97,7 @@ spec = it "adds" $ 1+1 `shouldBe` (2::Int)
   [...]
     is Applicative-lawful per
 -     [✔] Identity
-+     [✔] Identity  (5ms) (passed 100 tests.)
++     [✔] Identity  (21ms) (passed 100 tests.)
 ```
 
 To instead _suppress_ the printing of any additional text from the test runner, use `--expert` (default: `--no-expert`).

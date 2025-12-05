@@ -67,6 +67,10 @@ Parts [([],"a"),([],"b")]
 singleton :: ann -> b -> Parts ann b
 singleton ann x = Parts [(ann,x)]
 
+-- | Embed a value annotated with 'mempty'.
+value :: Monoid ann => b -> Parts ann b
+value x = Parts [(mempty,x)]
+
 -- | Embed a string literal annotated with 'mempty'.
 string :: (Monoid ann, IsString b) => String -> Parts ann b
 string s = Parts [(mempty,fromString s)]

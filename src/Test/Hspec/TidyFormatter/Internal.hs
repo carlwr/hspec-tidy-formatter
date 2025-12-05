@@ -134,22 +134,22 @@ progress (now,total) = "[" ++ str ++ "]"
 -- Handler helpers
 --
 
-data InfoChunks = InfoChunks
+data Info = Info
   { ifOneline   ::  Chunks
   , ifMultiline :: [Chunks]
   }
 
-mkInfo :: ItemInfo -> InfoChunks
+mkInfo :: ItemInfo -> Info
 mkInfo str =
-  let z = InfoChunks empty []
+  let z = Info empty []
   in
   case lines str of
     []  -> z
-    [l] -> z{ ifOneline   = fmtOne l `onlyIf` isVerbose }
-    ls  -> z{ ifMultiline = fmtMulti <$> ls }
+    [l] -> z{ ifOneline   = one l `onlyIf` isVerbose }
+    ls  -> z{ ifMultiline = multi <$> ls }
   where
-    fmtOne   s = chunk (" (" <> s <> ")") `with` (<>infoColor)
-    fmtMulti s = chunk ("  " <> s       ) `with` (<>infoColor)
+    one   s = chunk (" (" <> s <> ")") `with` (<>infoColor)
+    multi s = chunk ("  " <> s       ) `with` (<>infoColor)
 
 mkPending :: Maybe String -> [Chunks]
 mkPending mb =
@@ -164,7 +164,7 @@ mkPending mb =
 
 mkDuration :: Api.Seconds -> Chunks
 mkDuration (Api.Seconds secs) =
-  fromMaybe (chunk <$> mbStr)
+  maybeEmpty (chunk <$> mbStr)
     `with`   (<> infoColor)
     `onlyIf` Api.printTimes
   where
@@ -173,12 +173,12 @@ mkDuration (Api.Seconds secs) =
       ms -> Just $ ("  (" ++ show ms ++ "ms)")
 
 mkBox :: Char -> Char -> WithFormat -> Chunks
-mkBox unicode ascii f = "[" <> marker <> "] "
+mkBox unicode ascii color = "[" <> marker <> "] "
   where
     marker =
       ifThenElse Api.outputUnicode
-        (chunk [unicode] `with` (<>f))
-        (chunk [ascii  ] `with` (<>f))
+        (chunk [unicode] `with` (<>color))
+        (chunk [ascii  ] `with` (<>color))
 
 
 --

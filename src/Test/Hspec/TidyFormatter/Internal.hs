@@ -54,17 +54,23 @@ type Indentation = [Group]  -- [Group] when used to determine indentation
 
 Neither ever contains \n-s.
 
+Note: the [Chunks] of 'Lines' is embedded in an outer t'Parts' to allow monadic FormatM conditions to influence whether the newlines implied by [Chunks] are printed or not, i.e. to influence whether a 'Lines' value (including its implied newlines) are printed or not.
+
 > Chunks ~ Silenceable FormatM String
+> Lines  ~ Silenceable FormatM [Chunks]
 
 -}
 
 type WithFormat = Endo (FormatM ())
 
 type Chunks = Parts WithFormat String
-type Lines  = [Chunks]
+type Lines  = Parts WithFormat [Chunks]
 
 chunk :: String -> Chunks
 chunk = string . filter (/='\n')
+
+line :: Chunks -> Lines
+line chunks = value [chunks]
 
 
 --
@@ -76,7 +82,7 @@ chunk = string . filter (/='\n')
 type TransientString = String
 
 write :: Indentation -> Lines -> FormatM ()
-write gs = run Api.write . vsep . unlines'
+write gs = run (run Api.write . vsep . unlines')
   where
     unlines' = foldMap mkLine
     mkLine c = indentation gs <> c <> "\n"
@@ -100,24 +106,24 @@ transient gs =
 --
 
 groupStarted :: Group -> Lines
-groupStarted group = [chunk group]
+groupStarted group = line (chunk group)
 
 itemStarted :: Req -> TransientString
 itemStarted req = "[ ] " ++ req
 
 itemDone :: Req -> Api.Item -> Lines
 itemDone req itm =
-  [ box <> chunk req <> duration <> ifOneline info  ]
-  ++ pending
-  ++ ifMultiline info
+     line (box <> chunk req <> duration <> ifOneline info)
+  <> pending
+  <> ifMultiline info
   where
     duration = mkDuration (Api.itemDuration itm)
     info     = mkInfo     (Api.itemInfo     itm)
 
     (box,pending) =
       case Api.itemResult itm of
-        Api.Success     -> (mkBox '✔' 'v' succColor,[]   )
-        Api.Failure _ _ -> (mkBox '✘' 'x' failColor,[]   )
+        Api.Success     -> (mkBox '✔' 'v' succColor,empty   )
+        Api.Failure _ _ -> (mkBox '✘' 'x' failColor,empty   )
         Api.Pending _ s -> (mkBox '‐' '-' pendColor,mkPending s)
 
 progress :: Api.Progress -> TransientString
@@ -141,15 +147,16 @@ mkInfo :: ItemInfo -> Info
 mkInfo str =
   case lines str of
     []  -> z
-    [l] -> z{ ifOneline   = one l `onlyIf` isVerbose }
-    ls  -> z{ ifMultiline = multi <$> ls }
+    [l] -> z{ ifOneline   =       (one   $ l ) `onlyIf` isVerbose }
+    ls  -> z{ ifMultiline = value (multi<$>ls) }
   where
-    z       = Info empty []
+    z       = Info empty empty
     one   s = chunk (" (" <> s <> ")") `with` infoColor
     multi s = chunk ("  " <> s       ) `with` infoColor
 
 mkPending :: Maybe String -> Lines
 mkPending mb =
+  value $
   extraInd . mapAnn pendColor . chunk <$>
   case lines <$> mb of
     Nothing -> [ "# PENDING"   ]

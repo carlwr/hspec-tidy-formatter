@@ -77,8 +77,8 @@ empty = Parts []
 
 -- * Modify
 
-fromMaybe :: Maybe (Parts ann b) -> Parts ann b
-fromMaybe = \case
+maybeEmpty :: Maybe (Parts ann b) -> Parts ann b
+maybeEmpty = \case
   Just p -> p
   _      -> empty
 

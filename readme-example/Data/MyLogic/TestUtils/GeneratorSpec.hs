@@ -4,6 +4,7 @@ module Data.MyLogic.TestUtils.GeneratorSpec
 ( spec
 ) where
 
+import Helpers
 import Test.Hspec
 import Test.Hspec.Hedgehog
 import Hedgehog.Gen   qualified as Gen
@@ -14,6 +15,7 @@ spec = do
   it "Hedgehog generator" $ hedgehog $ do
     x <- forAll (Gen.int $ Range.constant 0 100)
     distributions x
+    delayIO
 
 distributions :: MonadTest m => Int -> m ()
 distributions x = do

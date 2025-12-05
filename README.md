@@ -102,6 +102,62 @@ E.g. with [`hspec-hedgehog`], which passes the number of tests run for each item
 
 To instead _suppress_ the printing of any additional text from the test runner, use `--expert` (default: `--no-expert`).
 
+### Verbosity switches `--[no-]expert`, `--[no-]times` combinations
+
+_For two spec items whose test runner returns a single line, and a few lines, respectively, of additional text:_
+
+```
+===========       =========================================
+<ARGS>            `hspec <ARGS>` example output
+===========       =========================================
+
+
+                                             (most verbose)
+
+
+-----------       -----------------------------------------
+--times           [✔] Identity  (21ms) (passed 100 tests.)
+--no-expert       [✔] Hedgehog generator  (49ms)
+                    passed 100 tests.
+                      n:   0       1% ▏···················
+                      n:   1- 4    5% █···················
+                      n:   5-19   16% ███▏················
+
+
+-----------       -----------------------------------------
+--no-times        [✔] Identity
+--no-expert       [✔] Hedgehog generator
+(DEFAULT)           passed 100 tests.
+                      n:   0       1% ▏···················
+                      n:   1- 4    5% █···················
+                      n:   5-19   16% ███▏················
+
+
+-----------       -----------------------------------------
+--times           [✔] Identity  (21ms)
+--expert          [✔] Hedgehog generator  (49ms)
+
+
+-----------       -----------------------------------------
+--no-times        [✔] Identity
+--expert          [✔] Hedgehog generator
+
+
+                                            (least verbose)
+
+```
+<!-- zsh command to produce material for the table:
+foreach e (--no-expert --expert) {
+foreach t (--times --no-times) {
+  echo $t
+  echo $e
+  command cabal -v0 test test:readme-example --test-options="--no-color --format=tidy $t $e" \
+  | awk "NR==6 || (NR>=18 && NR<=22)" \
+  | grep -P '^ '
+  echo
+} }
+-->
+
 
 <!-- links -->
 

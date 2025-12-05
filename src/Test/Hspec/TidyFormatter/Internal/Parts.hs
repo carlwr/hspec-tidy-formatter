@@ -1,8 +1,12 @@
 {-|
-Description : Ordered annotated sequences
+Description : Ordered annotated sequences useful for conditional emission
 License     : MIT
 
 /The mise-en-place utility set needed for a readable, declarative implementation of "Test.Hspec.TidyFormatter" -- in the dress of a small, general annotated-sequence module./
+
+The t'Parts' type expresses /ordered annotated sequences/. It is expected to be useful primarily in its 'Silenceable' specialization.
+
+The 'Silenceable' type, together with utility functions and instances, can be useful as an abstraction over sequences of /pairs of pure values and effect-modifying functions/.
 
 -}
 
@@ -17,9 +21,18 @@ import Data.String (IsString (..))
 import Data.Monoid (Endo (..))
 
 
+{- $setup
+>>> import Data.Monoid (Sum)
+-}
+
 -- * Type
 
--- | An ordered sequence of /elements/ where each /element/ consists of an /annotation/ and a /label/.
+{- | An ordered sequence of /elements/ where each /element/ consists of an /annotation/ and a /label/.
+
+This type is a thin newtype wrapper over [(a,b)], and usefully different from that bare type in nuance only: in t'Parts', the first tuple component (the /annotation/) is assumed to be meaningful only together with the second tuple component (the /label/). Therefore, t'Parts' have no utility functions or instances that allow combining over only the annotations of a t'Parts' - hence the lack of (Bi)Foldable and (Bi)Traversable. t'Parts' instead offers up to (Bi)Functor, Semigroup and Monoid; all of which retains the structural pairing of annotations and labels. For combining over the @(ann,b)@ pairs (elements) of a t'Parts', 'foldParts' and 'interpret' are provided instead.
+
+Further, the justification of a 'Parts' type could be claimed to rely solely on its specialization to the 'Silenceable' type.
+-}
 newtype Parts ann b = Parts [(ann,b)]
   deriving (Functor, Read, Show, Eq, Ord)
 
@@ -45,7 +58,6 @@ Parts [([],"a")]
 >>> string "a" :: Parts [Int] String
 Parts [([],"a")]
 
-
 >>> p = singleton [] "a" :: Parts [Int] String
 >>> :seti -XOverloadedStrings
 >>> p <> "b"
@@ -70,6 +82,12 @@ fromMaybe = \case
   Just p -> p
   _      -> empty
 
+{- | Map annotations.
+
+@
+mapAnn == 'first'
+@
+-}
 mapAnn :: (ann->ann') -> Parts ann b -> Parts ann' b
 mapAnn f (Parts xs) = Parts (f' <$> xs)
   where
@@ -77,12 +95,27 @@ mapAnn f (Parts xs) = Parts (f' <$> xs)
 
 {- | Flipped 'mapAnn'.
 
+Examples:
+
 >>> p = string "ab" :: Parts [Int] String
 >>> p
 Parts [([],"ab")]
 
 >>> p `with` (++[1])
 Parts [([1],"ab")]
+
+The high precedence of the operator variant means it binds tighter than e.g. '<>', which is inteded to facilitate constructs such as:
+
+>>> :seti -XOverloadedStrings
+>>> :{
+let parts :: Parts (Sum Int) String
+    parts =    "a" `with` (+1)
+            <> "b" `with` (+2)
+in  parts
+:}
+Parts [(Sum {getSum = 1},"a"),(Sum {getSum = 2},"b")]
+
+(Note: above, the 'IsString' instance promotes the string literals to 'Parts', initializing the annotation to 'mempty' == 'Sum 0'.)
 -}
 with :: Parts ann b -> (ann -> ann') -> Parts ann' b
 with = flip mapAnn
@@ -93,8 +126,9 @@ infixl 7 `with`
 
 {- | Right-fold a t'Parts'.
 
-> Parts . foldParts (:) [] == id
-
+@
+v'Parts' . 'foldParts' (:) [] == 'id'
+@
 -}
 foldParts ::
      ((ann,b) -> acc -> acc) -- ^ combine
@@ -108,8 +142,12 @@ foldParts f z (Parts xs) = foldr f z xs
 
 {- | Interpret an annotated sequence by applying a function to each element and combine the results.
 
-> interpret (,)                == foldParts
-> Parts . interpret (,) (:) [] == id
+@
+'interpret' (,)                == 'foldParts'
+'Parts' . 'interpret' (,) (:) [] == 'id'
+@
+
+Examples:
 
 >>> parts = singleton 'a' 1 <> singleton 'b' 2
 >>> interpret (,) (:) [] parts
@@ -185,13 +223,17 @@ whenA b = mapAnn (Endo (when b) <>)
 
 {- | Flipped 'when''.
 
+Example:
+
 >>> import Data.Monoid (Endo(..))
+>>> import Data.Char (toUpper)
+>>> upper  = fmap toUpper
 >>> interp = interpret (\ann -> appEndo ann . putStr) (>>) (pure ())
 >>> yes    = string "yes" `onlyIf` (pure True )
 >>> no     = string "no"  `onlyIf` (pure False)
->>> dot    = string "."
->>> interp $ yes <> no <> dot
-yes.
+>>> ok     = upper <$> (yes <> no <> string ".")
+>>> interp ok
+YES.
 -}
 onlyIf :: Monad m =>
      Silenceable m b

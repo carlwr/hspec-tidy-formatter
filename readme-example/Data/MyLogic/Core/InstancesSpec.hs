@@ -10,8 +10,8 @@ spec = do
   it "Functor"   True
   it "Monoid" True
   describe "is Applicative-lawful per" $ do
-    it_hh "Identity"
-    it_hh "Homomorphism"
-    it_hh "Interchange"
-    it_hh "Composition"
+    it_hh_slow "Identity"
+    it_hh      "Homomorphism"
+    it_hh      "Interchange"
+    it_hh      "Composition"
 

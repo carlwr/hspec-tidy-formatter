@@ -19,6 +19,7 @@ where
 import Control.Monad (when)
 import Data.String (IsString (..))
 import Data.Monoid (Endo (..))
+import Data.Bifunctor (Bifunctor (..))
 
 
 {- $setup
@@ -35,6 +36,10 @@ Further, the justification of a 'Parts' type could be claimed to rely solely on 
 -}
 newtype Parts ann b = Parts [(ann,b)]
   deriving (Functor, Read, Show, Eq, Ord)
+
+instance Bifunctor Parts where
+  bimap :: (ann -> ann') -> (b -> b') -> Parts ann b -> Parts ann' b'
+  bimap f g = mapAnn f . fmap g
 
 instance Semigroup (Parts ann b) where
   Parts xs <> Parts ys = Parts (xs ++ ys)

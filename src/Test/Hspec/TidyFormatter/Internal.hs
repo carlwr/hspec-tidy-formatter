@@ -15,6 +15,7 @@ import Test.Hspec.Api.Formatters.V3 qualified as Api
 import Test.Hspec.Api.Formatters.V3 (Formatter, FormatM)
 import Data.Monoid (Endo (..))
 import Control.Monad (when)
+import Data.Bifunctor
 
 
 --
@@ -63,8 +64,11 @@ Note: the [Chunks] of 'Lines' is embedded in an outer t'Parts' to allow monadic 
 
 type WithFormat = Endo (FormatM ())
 
-type Chunks = Parts WithFormat String
-type Lines  = Parts WithFormat [Chunks]
+type Chunks' ann = Parts ann String
+type Lines'  ann = Parts ann [Chunks]
+
+type Chunks = Chunks' WithFormat
+type Lines  = Lines'  WithFormat
 
 chunk :: String -> Chunks
 chunk = string . filter (/='\n')
@@ -138,21 +142,27 @@ progress (now,total) = "[" ++ str ++ "]"
 -- Handler helpers
 --
 
-data Info = Info
-  { ifOneline   :: Chunks
-  , ifMultiline :: Lines
+data Info' ann = Info
+  { ifOneline   :: Chunks' ann
+  , ifMultiline :: Lines'  ann
   }
+
+instance Functor Info' where
+  fmap f (Info one multi) = Info (first f one) (first f multi)
+
+type Info = Info' WithFormat
 
 mkInfo :: ItemInfo -> Info
 mkInfo str =
+  infoColor <$>
   case lines str of
     []  -> z
     [l] -> z{ ifOneline   =       (one   $ l ) `onlyIf` isVerbose }
     ls  -> z{ ifMultiline = value (multi<$>ls) }
   where
     z       = Info empty empty
-    one   s = chunk (" (" <> s <> ")") `with` infoColor
-    multi s = chunk ("  " <> s       ) `with` infoColor
+    one   s = chunk $ " (" <> s <> ")"
+    multi s = chunk $ "  " <> s
 
 mkPending :: Maybe String -> Lines
 mkPending mb =

@@ -1,7 +1,7 @@
 cabal-version: 3.0
 
 name:           hspec-tidy-formatter
-version:        0.1.0.0
+version:        0.1.1.0
 stability:      experimental
 category:       Testing
 synopsis:       A custom hspec formatter for easy-to-read terminal output.

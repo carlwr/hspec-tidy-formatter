@@ -22,17 +22,35 @@ Test commands and what they target:
 cabal test doctest       # the actual (few) tests there are
 cabal test dev-example   # example tests suitable for dev iteration
 cabal test --jobs=1      # all tests (the above + README tests)
+
+stack test --flag hspec-tidy-formatter:doctest
+                         # build and test with stack
+
+stack test --flag hspec-tidy-formatter:doctest --snapshot nightly
+                         # ...with latest nightly snapshot
+
 ```
 
+Useful command to run all tests in a robust way, without transitive output:
+```sh
+BUILDKITE=true command cabal test -j1
+```
+
+Note: `BUILDKITE=true` is a hack to disable transitive output (`hspec` checks the presence and value of this environment variable before running tests).
+
+Run dev-example tests with explicit, but default, options; and (necessarily) run doctests separately:
+```sh
+cabal build && command cabal -v0 test doctest && command cabal -v0 test test:dev-example -j1 --test-options='--no-times --no-expert'
+```
 
 # Maintainer
 
 Bump version:
 ```sh
-vim <proj>.cabal          # edit "version: " field
+vim <proj>.cabal              # edit "version: " field
 git add <proj>.cabal
-git commit
-git tag -m 0.0.1 0.0.1    # will tag the latest commit
+git commit -m 'chore: set version to 0.0.1.0'
+git tag -m 0.0.1.0 0.0.1.0    # will tag the latest commit
 git push --tags
 ```
 

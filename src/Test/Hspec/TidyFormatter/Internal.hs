@@ -16,6 +16,8 @@ import Test.Hspec.Api.Formatters.V3 (Formatter, FormatM)
 import Data.Monoid (Endo (..))
 import Control.Monad (when)
 import Data.Bifunctor
+import Data.String (fromString, IsString)
+import Data.List (genericReplicate)
 
 
 --
@@ -27,13 +29,14 @@ tidy = Api.Formatter {
   formatterStarted      = nothing
 , formatterDone         = Api.formatterDone Api.checks -- footer, failures
 , formatterGroupDone    = const nothing
-, formatterGroupStarted = \(gs,grp)     -> write     gs (groupStarted grp)
-, formatterItemStarted  = \(gs,req)     -> transient gs (itemStarted req)
-, formatterItemDone     = \(gs,req) itm -> write     gs (itemDone req itm)
-, formatterProgress     = \(gs,_  ) prg -> transient gs (progress prg)
+, formatterGroupStarted = \(nst->n,grp)     -> write     n (groupStarted grp)
+, formatterItemStarted  = \(nst->n,req)     -> transient n (itemStarted req)
+, formatterItemDone     = \(nst->n,req) itm -> write     n (itemDone req itm)
+, formatterProgress     = \(nst->n,_  ) prg -> transient n (progress prg)
 } where
 
   nothing = pure ()
+  nst     = nesting
 
 
 --
@@ -43,7 +46,6 @@ tidy = Api.Formatter {
 type Group         = String   -- ([Group],Req) == Api.Path
 type Req           = String
 type ItemInfo      = String
-type Indentation   = [Group]  -- [Group] when used to determine indentation
 
 
 --
@@ -82,21 +84,21 @@ line chunks = value [chunks]
 
 type TransientString = String
 
-write :: Indentation -> Lines -> FormatM ()
-write gs = run (run Api.write . vsep . unlines')
+write :: Nesting -> Lines -> FormatM ()
+write nst = run (run Api.write . vsep . unlines')
   where
     unlines' = foldMap mkLine
-    mkLine c = specIndentation gs <> c <> "\n"
+    mkLine c = (specIndentation nst <>) (c <> "\n")
 
     vsep|isLevel0  = ("\n" <>)
         |otherwise = id
 
-    isLevel0 = null gs
+    isLevel0 = nst==0
 
-transient :: Indentation -> TransientString -> FormatM ()
-transient gs =
+transient :: Nesting -> TransientString -> FormatM ()
+transient nst =
   writeTransient
-  . (indentationStr gs ++)
+  . (specIndentation nst <>)
   . filter (/='\n')
   where
     writeTransient = whenReportProgress . Api.writeTransient
@@ -242,11 +244,15 @@ whenReportProgress = whenM (Api.getConfigValue Api.formatConfigReportProgress)
 
 -- These functions, with signatures that include the 'Nesting' type, are used only for the indentation of /a full spec tree item as a whole/ - indentation of its constituents use other, local, indentation logic.
 
-indentationStr :: Indentation -> String
-indentationStr gs = replicate (length gs * 2) ' '
+-- | The nesting depth of a spec tree item.
+newtype Nesting = Nesting Int
+  deriving (Show, Eq, Ord, Num, Real, Enum, Integral)
 
-specIndentation :: Indentation -> Chunks
-specIndentation gs = chunk (indentationStr gs)
+nesting :: [Group] -> Nesting
+nesting gs = Nesting (2 * length gs)
+
+specIndentation :: IsString m => Nesting -> m
+specIndentation n = fromString (genericReplicate n ' ')
 
 
 --

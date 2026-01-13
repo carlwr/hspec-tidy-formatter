@@ -24,25 +24,26 @@ import Data.Bifunctor
 
 tidy :: Formatter
 tidy = Api.Formatter {
-  formatterStarted      = pure ()
+  formatterStarted      = nothing
 , formatterDone         = Api.formatterDone Api.checks -- footer, failures
-, formatterGroupDone    = \(_ ,_  )     -> nothing
+, formatterGroupDone    = const nothing
 , formatterGroupStarted = \(gs,grp)     -> write     gs (groupStarted grp)
 , formatterItemStarted  = \(gs,req)     -> transient gs (itemStarted req)
 , formatterItemDone     = \(gs,req) itm -> write     gs (itemDone req itm)
 , formatterProgress     = \(gs,_  ) prg -> transient gs (progress prg)
-}
-  where nothing = pure ()
+} where
+
+  nothing = pure ()
 
 
 --
 -- hspec API type aliases
 --
 
-type Group       = String   -- ([Group],Req) == Api.Path
-type Req         = String
-type ItemInfo    = String
-type Indentation = [Group]  -- [Group] when used to determine indentation
+type Group         = String   -- ([Group],Req) == Api.Path
+type Req           = String
+type ItemInfo      = String
+type Indentation   = [Group]  -- [Group] when used to determine indentation
 
 
 --
@@ -55,11 +56,7 @@ type Indentation = [Group]  -- [Group] when used to determine indentation
 
 Neither ever contains \n-s.
 
-Note: the [Chunks] of 'Lines' is embedded in an outer t'Parts' to allow monadic FormatM conditions to influence whether the newlines implied by [Chunks] are printed or not, i.e. to influence whether a 'Lines' value (including its implied newlines) are printed or not.
-
-> Chunks ~ Silenceable FormatM String
-> Lines  ~ Silenceable FormatM [Chunks]
-
+Note: the [Chunks] of 'Lines' is embedded as well to allow monadic FormatM conditions to influence whether the newlines implied by [Chunks] are printed or not, i.e. to influence whether a 'Lines' value (including its implied newlines) are printed or not.
 -}
 
 type WithFormat = Endo (FormatM ())
@@ -89,7 +86,7 @@ write :: Indentation -> Lines -> FormatM ()
 write gs = run (run Api.write . vsep . unlines')
   where
     unlines' = foldMap mkLine
-    mkLine c = indentation gs <> c <> "\n"
+    mkLine c = specIndentation gs <> c <> "\n"
 
     vsep|isLevel0  = ("\n" <>)
         |otherwise = id
@@ -169,27 +166,32 @@ mkPending mb =
   value $
   extraInd . mapAnn pendColor . chunk <$>
   case lines <$> mb of
-    Nothing -> [ "# PENDING"   ]
-    Just ls -> ( "# PENDING: "
-               , "           " ) `laminate` ls
+    Nothing  -> ["# PENDING"]
+    Just ls  -> ("# PENDING: "
+                ,"           ") `laminate` ls
   where
-    laminate (x,y) = zipWith (++) (x : repeat y)
-    extraInd c     = "    " <> c
+    extraInd c = "    " <> c
 
 mkDuration :: Api.Seconds -> Chunks
 mkDuration (Api.Seconds secs) =
+  when' Api.printTimes $
   maybeEmpty (chunk <$> mbStr)
     `with`   infoColor
-    `onlyIf` Api.printTimes
   where
     mbStr = case floor (secs * 1000) of
       0  -> Nothing
       ms -> Just $ ("  (" ++ show ms ++ "ms)")
 
+{- | Join two columns horizontally.
+
+The first column has @label@ as its first line, and the given padding string as all following lines.
+-}
+laminate :: (String,String) -> [String] -> [String]
+laminate (label,pad) body = zipWith (++) (label : repeat pad) body
+
 mkBox :: Char -> Char -> Color -> Chunks
-mkBox unicode ascii color = "[" <> marker <> "] "
-  where
-    marker =
+mkBox unicode ascii color = "[" <> marker <> "] " where
+  marker =
       ifThenElse Api.outputUnicode
         (chunk [unicode] `with` color)
         (chunk [ascii  ] `with` color)
@@ -238,11 +240,13 @@ whenReportProgress = whenM (Api.getConfigValue Api.formatConfigReportProgress)
 -- Spec indentation
 --
 
+-- These functions, with signatures that include the 'Nesting' type, are used only for the indentation of /a full spec tree item as a whole/ - indentation of its constituents use other, local, indentation logic.
+
 indentationStr :: Indentation -> String
 indentationStr gs = replicate (length gs * 2) ' '
 
-indentation :: Indentation -> Chunks
-indentation gs = chunk (indentationStr gs)
+specIndentation :: Indentation -> Chunks
+specIndentation gs = chunk (indentationStr gs)
 
 
 --

@@ -116,18 +116,24 @@ itemStarted req = "[ ] " ++ req
 
 itemDone :: Req -> Api.Item -> Lines
 itemDone req itm =
-     line (box <> chunk req <> duration <> ifOneline info)
+     line ("["<>marker<>"] " <> chunk req <> duration <> ifOneline info)
   <> pending
   <> ifMultiline info
   where
     duration = mkDuration (Api.itemDuration itm)
     info     = mkInfo     (Api.itemInfo     itm)
 
-    (box,pending) =
+    marker =
+      let pick = ifThenElse Api.outputUnicode in
       case Api.itemResult itm of
-        Api.Success     -> (mkBox '✔' 'v' succColor,empty   )
-        Api.Failure _ _ -> (mkBox '✘' 'x' failColor,empty   )
-        Api.Pending _ s -> (mkBox '‐' '-' pendColor,mkPending s)
+        Api.Success     -> pick "✔" "v" `with` succColor
+        Api.Failure _ _ -> pick "✘" "x" `with` failColor
+        Api.Pending _ _ -> pick "‐" "-" `with` pendColor
+
+    pending =
+      case Api.itemResult itm of
+        Api.Pending _ s -> mkPending s
+        _               -> empty
 
 progress :: Api.Progress -> TransientString
 progress (now,total) = "[" ++ str ++ "]"
@@ -190,13 +196,6 @@ The first column has @label@ as its first line, and the given padding string as 
 -}
 laminate :: (String,String) -> [String] -> [String]
 laminate (label,pad) body = zipWith (++) (label : repeat pad) body
-
-mkBox :: Char -> Char -> Color -> Chunks
-mkBox unicode ascii color = "[" <> marker <> "] " where
-  marker =
-      ifThenElse Api.outputUnicode
-        (chunk [unicode] `with` color)
-        (chunk [ascii  ] `with` color)
 
 
 --

@@ -124,7 +124,7 @@ in  parts
 :}
 Parts [(Sum {getSum = 1},"a"),(Sum {getSum = 2},"b")]
 
-(Note: above, the 'IsString' instance promotes the string literals to 'Parts', initializing the annotation to 'mempty' == 'Sum 0'.)
+(Note: above, the 'IsString' instance promotes the string literals to t'Parts', initializing the annotation to 'mempty' == 'Sum 0'.)
 -}
 with :: Parts ann b -> (ann -> ann') -> Parts ann' b
 with = flip mapAnn
@@ -187,7 +187,7 @@ interpret interp f = foldParts f'
 
 {- $silenceable
 
-The 'Silenceable' specialization of t'Parts' have annotations that /describe how to transform the effect of emitting the label it is paired with/. This allows embedding per-element effectfully-predicated include/suppress decisions in the annotations. The decisions are effectuated at interpretation time.
+The 'Silenceable' specialization of t'Parts' have annotations that /describe how to transform the effect of emitting the label it is paired with/. This allows embedding per-element include/suppress decisions in the annotations. The decisions are effectuated at interpretation time. Predicate values can be pure (e.g. `True`) or effectful (e.g. `m True`).
 -}
 
 type Silenceable m b = Parts (Endo (m ())) b
@@ -258,7 +258,6 @@ At interpretation, the monadic condition will be run twice (for every element).
 
 The expectation that exactly one of the arguments will have all its elements included and the other have all its elements suppressed will hold if the same Bool is returned every time the effectful condition is run.
 -}
-
 ifThenElse :: Monad m =>
      m Bool
   -> Silenceable m b  -- ^ to include if True
@@ -267,6 +266,23 @@ ifThenElse :: Monad m =>
 ifThenElse pM true false =
      (when'        pM  true )
   <> (when' (not<$>pM) false)
+
+
+{-| /Binary choice/. Equivalent to 'ifThenElse' but with a different signature.
+
+This function is included mainly to allow comparing its signature to that of '=<<':
+
+@
+'withTrueIf' :: (a~'Bool', s a~'Silenceable' m a) =>
+\ \             'Monad' m => (a -> s b) -> m a -> s b
+('=<<')      :: 'Monad' m => (a -> m b) -> m a -> m b
+@
+-}
+withTrueIf :: (Monad m)
+  => (Bool -> Silenceable m a) -- ^a (pure) mapping from 'Bool' to 'Silenceable'
+  -> m Bool                    -- ^a monadic 'Bool'
+  -> Silenceable m a           -- ^the resulting (pure) 'Silenceable'
+withTrueIf f pM = ifThenElse pM (f True) (f False)
 
 
 -- ** Interpret

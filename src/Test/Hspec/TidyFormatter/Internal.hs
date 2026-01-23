@@ -81,8 +81,6 @@ line chunks = value [chunks]
 -- Output
 --
 
--- `write` and `transient` find and leave the terminal state as: cursor at column 0 of next line to be written
-
 type TransientString = String
 
 write :: Nesting -> Lines -> FormatM ()

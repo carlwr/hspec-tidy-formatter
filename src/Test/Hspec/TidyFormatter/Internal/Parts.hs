@@ -287,15 +287,15 @@ withTrueIf f pM = ifThenElse pM (f True) (f False)
 
 -- ** Interpret
 
-{- | Interpret by emitting each label with the given function, then applying the annotation, and combining with '>>'.
+{- | Interpret by emitting each label with the given function, then applying the annotation, and combining with '>>' (actually: '*>', since 'Applicative').
 
 Note: this function is basically 'interpret', but with some type specialization, some defaults and an adjusted API shape.
 -}
-run :: Monad m =>
+run :: Applicative m =>
      (b -> m ())      -- ^ emitting a label
   -> Silenceable m b  -- ^ the t'Silenceable' to interpret
   -> m ()             -- ^ returned interpretation
-run emit = interpret f (>>) z
+run emit = interpret f (*>) z
   where
     f ann b = appEndo ann (emit b)
     z       = pure ()

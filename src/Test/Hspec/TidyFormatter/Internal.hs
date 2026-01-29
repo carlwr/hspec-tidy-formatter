@@ -18,6 +18,7 @@ import Control.Monad (when)
 import Data.Bifunctor
 import Data.String (fromString, IsString)
 import Data.List (genericReplicate)
+import Data.Functor ((<&>))
 
 
 --
@@ -161,11 +162,14 @@ mkInfo str =
   unlessExpert . infoColor <$>
   case lines str of
     []  -> z
-    [l] -> z{ ifOneline   =       (one   $ l ) `onlyIf` isVerbose }
+    [l] -> z{ ifOneline   = byVerbosity (one l) }
     ls  -> z{ ifMultiline = value (multi<$>ls) }
   where
     z       = Info empty empty
-    one   s = chunk $ " (" <> s <> ")"
+
+    one _ Quiet = empty
+    one s _     = chunk $ " (" <> s <> ")"
+
     multi s = chunk $ "  " <> s
 
 mkPending :: Maybe PendingString -> Lines
@@ -219,9 +223,21 @@ failColor = (<> Endo Api.withFailColor   )
 
 --- Verbosity ---
 
-isVerbose :: FormatM Bool
-isVerbose = Api.printTimes
+data Verbosity =
+    Quiet
+  | Verbose
+  deriving (Eq, Show, Enum, Bounded)
+
+type VerbosityM = FormatM Verbosity
+
+verbosityM :: VerbosityM
+verbosityM = Api.printTimes <&> \case
+  False -> Quiet
+  True  -> Verbose
   -- borrow '--times' as verbosity switch since that gives non-verbose by default, which is what we want (using '--expert' would give _verbose_ by default)
+
+byVerbosity :: (Verbosity -> Parts WithFormat b) -> Parts WithFormat b
+byVerbosity = byAction verbosityM
 
 
 --- Expert ---

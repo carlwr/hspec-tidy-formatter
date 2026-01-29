@@ -199,6 +199,9 @@ mkBox unicode ascii color = "[" <> marker <> "] "
 -- Api shorthands
 --
 
+
+--- Color ---
+
 type Color = WithFormat -> WithFormat
 
 infoColor :: Color
@@ -211,19 +214,28 @@ pendColor = (<> Endo Api.withPendingColor)
 succColor = (<> Endo Api.withSuccessColor)
 failColor = (<> Endo Api.withFailColor   )
 
+
+--- Verbosity ---
+
 isVerbose :: FormatM Bool
 isVerbose = Api.printTimes
   -- borrow '--times' as verbosity switch since that gives non-verbose by default, which is what we want (using '--expert' would give _verbose_ by default)
 
+
+--- Expert ---
+
 unlessExpert :: WithFormat -> WithFormat
 unlessExpert = (<> Endo Api.unlessExpert)
+
+
+--- Progress ---
 
 whenReportProgress :: FormatM () -> FormatM ()
 whenReportProgress = whenM (Api.getConfigValue Api.formatConfigReportProgress)
 
 
 --
--- Misc
+-- Spec indentation
 --
 
 indentationStr :: Indentation -> String

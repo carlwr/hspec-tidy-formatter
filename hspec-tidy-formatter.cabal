@@ -63,8 +63,6 @@ common tooldep_hspec-discover
 -- ----------
 
 common defaults
-  autogen-modules: Paths_hspec_tidy_formatter
-  other-modules:   Paths_hspec_tidy_formatter
   ghc-options:
       -Wall
       -Wcompat
@@ -96,6 +94,8 @@ common defaults
       ExtendedDefaultRules
       LambdaCase
       RecordWildCards
+      ViewPatterns
+      MultiWayIf
 
 library
   import:
@@ -103,6 +103,8 @@ library
     , dep_base
     , dep_hspec-api
   hs-source-dirs: src
+  autogen-modules: Paths_hspec_tidy_formatter
+  other-modules:   Paths_hspec_tidy_formatter
   exposed-modules:
       Test.Hspec.TidyFormatter
       Test.Hspec.TidyFormatter.Internal
@@ -117,7 +119,7 @@ test-suite readme
   main-is:         README.lhs
   ghc-options:     -pgmL markdown-unlit
   build-tool-depends:
-    , markdown-unlit:markdown-unlit == 0.6.0
+    , markdown-unlit:markdown-unlit >= 0.5 && < 0.7
   build-depends:
     , hspec-tidy-formatter
 

@@ -10,6 +10,11 @@ tested with Cabal version: `3.14.2.0`
 import: misc/dev.project
 ```
 
+If a cabal.project.local is present it can be ignored with:
+```sh
+cabal --project-file=cabal.project.no-local ..
+```
+
 ### Tests
 
 Test commands and what they target:
@@ -49,6 +54,14 @@ mv cabal.project.local{,_}  # disable
 rm -rf dist-newstyle; cabal --with-compiler=ghc-X.X.X --prefer-oldest build
 rm -rf dist-newstyle; cabal --with-compiler=ghc-X.X.X --prefer-oldest test
 mv cabal.project.local{_,}  # re-enable
+```
+
+Verify exercising `doctest` flag, with any `cabal.project.local` disabled:
+```sh
+cabal --project-file=cabal.project.no-local build --flags='hspec-tidy-formatter -doctest' && \
+cabal --project-file=cabal.project.no-local test  --flags='hspec-tidy-formatter -doctest' && echo "OK\n" && \
+cabal --project-file=cabal.project.no-local build --flags='hspec-tidy-formatter +doctest' && \
+cabal --project-file=cabal.project.no-local test  --flags='hspec-tidy-formatter +doctest' && echo "OK\n"
 ```
 
 Re-generate README screenshot:

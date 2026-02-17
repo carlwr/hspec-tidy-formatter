@@ -153,29 +153,31 @@ progress (now,total) = "[" ++ str ++ "]"
 -- Handler helpers
 --
 
-data Info' ann = Info
-  { ifOneline   :: Chunks' ann
-  , ifMultiline :: Lines'  ann
+data Info = Info
+  { ifOneline   :: Chunks
+  , ifMultiline :: Lines
   }
 
-instance Functor Info' where
-  fmap f (Info one multi) = Info (first f one) (first f multi)
-
-type Info = Info' WithFormat
+mapInfoParts :: (WithFormat -> WithFormat) -> Info -> Info
+mapInfoParts f (Info one multi) = Info (first f one) (first f multi)
 
 mkInfo :: ItemInfo -> Info
 mkInfo str =
-  unlessExpert . infoColor <$>
+  mapInfoParts (unlessExpert . infoColor) $
   case lines str of
     []  -> z
-    [l] -> z{ ifOneline   = byVerbosity (asStr l) }
-    ls  -> z{ ifMultiline = value (asBlock<$>ls) }
+    [l] -> z{ ifOneline   = byAction verbosityM (asStr . chunk $ l) }
+    ls  -> z{ ifMultiline = value (asBlock . chunk<$> ls) }
   where
     z       = Info empty empty
 
     asStr _ Quiet = empty
-    asStr s _     = chunk $ " (" <> s <> ")"
-    asBlock s = chunk $ "  " <> s
+    asStr s _     = fmtStr s
+
+    asBlock s = fmtBlock s
+
+    fmtStr s = " (" <> s <> ")"
+    fmtBlock s = "  " <> s
 
 mkPending :: Maybe PendingString -> Lines
 mkPending mb =
@@ -246,9 +248,6 @@ verbosityM = Api.printTimes <&> \case
   False -> Quiet
   True  -> Verbose
   -- borrow '--times' as verbosity switch since that gives non-verbose by default, which is what we want (using '--expert' would give _verbose_ by default)
-
-byVerbosity :: (Verbosity -> Parts WithFormat b) -> Parts WithFormat b
-byVerbosity = byAction verbosityM
 
 
 --- Expert ---

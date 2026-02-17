@@ -6,7 +6,10 @@ License     : MIT
 {-# LANGUAGE OverloadedStrings #-}
 
 module Test.Hspec.TidyFormatter.Internal
-( tidy
+(
+  -- * Formatter
+  tidy
+
 ) where
 
 import Test.Hspec.TidyFormatter.Internal.Parts
@@ -19,6 +22,7 @@ import Data.Bifunctor
 import Data.String (fromString, IsString)
 import Data.List (genericReplicate)
 import Data.Functor ((<&>))
+
 
 
 --
@@ -85,7 +89,8 @@ line chunks = value [chunks]
 type TransientString = String
 
 write :: Nesting -> Lines -> FormatM ()
-write nst = run (run Api.write . vsep . unlines')
+write nst =
+  run (run Api.write . vsep . unlines')
   where
     unlines' = foldMap mkLine
     mkLine c = (specIndentation nst <>) (c <> "\n")
@@ -115,21 +120,22 @@ itemStarted req = "[ ] " ++ (firstLine req)
 
 itemDone :: Req -> Api.Item -> Lines
 itemDone req itm =
-     line ("["<>marker<>"] " <> chunk req <> duration <> ifOneline info)
-  <> pending
+     line (box <> chunk req <> duration <> ifOneline info)
+  <> pendingBlock
   <> ifMultiline info
   where
-    duration = mkDuration (Api.itemDuration itm)
-    info     = mkInfo     (Api.itemInfo     itm)
+    box                 = "["<>m<>"] "
+    duration            = mkDuration      $ Api.itemDuration itm
+    info                = mkInfo          $ Api.itemInfo     itm
 
-    marker =
+    m =
       let pick = ifThenElse Api.outputUnicode in
       case Api.itemResult itm of
         Api.Success     -> pick "✔" "v" `with` succColor
         Api.Failure _ _ -> pick "✘" "x" `with` failColor
         Api.Pending _ _ -> pick "‐" "-" `with` pendColor
 
-    pending =
+    pendingBlock =
       case Api.itemResult itm of
         Api.Pending _ s -> mkPending s
         _               -> empty
@@ -161,15 +167,14 @@ mkInfo str =
   unlessExpert . infoColor <$>
   case lines str of
     []  -> z
-    [l] -> z{ ifOneline   = byVerbosity (one l) }
-    ls  -> z{ ifMultiline = value (multi<$>ls) }
+    [l] -> z{ ifOneline   = byVerbosity (asStr l) }
+    ls  -> z{ ifMultiline = value (asBlock<$>ls) }
   where
     z       = Info empty empty
 
-    one _ Quiet = empty
-    one s _     = chunk $ " (" <> s <> ")"
-
-    multi s = chunk $ "  " <> s
+    asStr _ Quiet = empty
+    asStr s _     = chunk $ " (" <> s <> ")"
+    asBlock s = chunk $ "  " <> s
 
 mkPending :: Maybe PendingString -> Lines
 mkPending mb =

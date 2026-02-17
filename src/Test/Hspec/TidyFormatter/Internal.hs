@@ -46,6 +46,7 @@ tidy = Api.Formatter {
 type Group         = String   -- ([Group],Req) == Api.Path
 type Req           = String
 type ItemInfo      = String
+type PendingString = String
 
 
 --
@@ -169,7 +170,7 @@ mkInfo str =
     one   s = chunk $ " (" <> s <> ")"
     multi s = chunk $ "  " <> s
 
-mkPending :: Maybe String -> Lines
+mkPending :: Maybe PendingString -> Lines
 mkPending mb =
   value $
   extraInd . mapAnn pendColor . chunk <$>

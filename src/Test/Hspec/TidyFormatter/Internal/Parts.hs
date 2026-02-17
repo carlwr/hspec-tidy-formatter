@@ -284,6 +284,23 @@ withTrueIf :: (Monad m)
   -> Silenceable m a           -- ^the resulting (pure) 'Silenceable'
 withTrueIf f pM = ifThenElse pM (f True) (f False)
 
+-- | Constraining to types with a known and finite set of inhabitants.
+type Enumerable a = (Enum a, Bounded a, Eq a)
+
+{- | /Evaluation of finite-domain function./
+
+At interpretation, the monadic action will be run once for each value of the domain. The same caveats as with the other functions apply.
+-}
+byAction
+  :: (Monad m, Enumerable a)
+  => m a                     -- ^ monadic evaluation point
+  -> (a -> Silenceable m b)  -- ^ the function to evaluate
+  -> Silenceable m b
+byAction xM f = foldMap g domain
+  where
+    g d    = when' ((==d) <$> xM) (f d)
+    domain = [minBound..maxBound]
+
 
 -- ** Interpret
 

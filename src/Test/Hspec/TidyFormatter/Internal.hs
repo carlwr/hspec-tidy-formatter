@@ -174,13 +174,16 @@ mkInfo str =
 mkPending :: Maybe PendingString -> Lines
 mkPending mb =
   value $
-  extraInd . mapAnn pendColor . chunk <$>
-  case lines <$> mb of
+  (extraInd<>) . mapAnn pendColor . chunk <$>
+  case mb of
     Nothing  -> ["# PENDING"]
-    Just ls  -> ("# PENDING: "
-                ,"           ") `laminate` ls
+    Just str ->
+      laminate
+        "           "
+        "# PENDING: "
+        str
   where
-    extraInd c = "    " <> c
+    extraInd = "    "
 
 mkDuration :: Api.Seconds -> Chunks
 mkDuration (Api.Seconds secs) =
@@ -195,9 +198,12 @@ mkDuration (Api.Seconds secs) =
 {- | Join two columns horizontally.
 
 The first column has @label@ as its first line, and the given padding string as all following lines.
+
+The second column has lines formed by splitting the 'String' argument on '\n's using 'lines'.
 -}
-laminate :: (String,String) -> [String] -> [String]
-laminate (label,pad) body = zipWith (++) (label : repeat pad) body
+laminate :: String -> String -> String -> [String]
+laminate pad label body =
+  zipWith (++) (label : repeat pad) (lines body)
 
 
 --

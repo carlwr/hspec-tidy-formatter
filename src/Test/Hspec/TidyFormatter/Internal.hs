@@ -120,13 +120,14 @@ itemStarted req = "[ ] " ++ (firstLine req)
 
 itemDone :: Req -> Api.Item -> Lines
 itemDone req itm =
-     line (box <> chunk req <> duration <> ifOneline info)
+     line (box <> chunk req <> duration <> infoStr)
   <> pendingBlock
-  <> ifMultiline info
+  <> infoBlock
   where
     box                 = "["<>m<>"] "
     duration            = mkDuration      $ Api.itemDuration itm
-    info                = mkInfo          $ Api.itemInfo     itm
+    (infoStr,infoBlock) = iTuple . mkInfo $ Api.itemInfo     itm
+    iTuple info         =  (ifOneline info,ifMultiline info)
 
     m =
       let pick = ifThenElse Api.outputUnicode in

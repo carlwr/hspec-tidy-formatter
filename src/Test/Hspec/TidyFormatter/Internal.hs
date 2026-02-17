@@ -96,12 +96,9 @@ write nst = run (run Api.write . vsep . unlines')
     isLevel0 = nst==0
 
 transient :: Nesting -> TransientString -> FormatM ()
-transient nst =
-  writeTransient
-  . (specIndentation nst <>)
-  . filter (/='\n')
-  where
-    writeTransient = whenReportProgress . Api.writeTransient
+transient nst str =
+  whenReportProgress $
+  Api.writeTransient (specIndentation nst <> str)
 
 
 --
@@ -112,7 +109,9 @@ groupStarted :: Group -> Lines
 groupStarted group = line (chunk group)
 
 itemStarted :: Req -> TransientString
-itemStarted req = "[ ] " ++ req
+itemStarted req = "[ ] " ++ (firstLine req)
+  where
+    firstLine = concat . take 1 . lines
 
 itemDone :: Req -> Api.Item -> Lines
 itemDone req itm =

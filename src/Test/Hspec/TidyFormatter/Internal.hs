@@ -18,7 +18,6 @@ import Test.Hspec.Api.Formatters.V3 qualified as Api
 import Test.Hspec.Api.Formatters.V3 (Formatter, FormatM)
 import Data.Monoid (Endo (..))
 import Control.Monad (when)
-import Data.Bifunctor
 import Data.String (fromString, IsString)
 import Data.List (genericReplicate)
 import Data.Functor ((<&>))
@@ -132,9 +131,9 @@ itemDone req itm =
     m =
       let pick = ifThenElse Api.outputUnicode in
       case Api.itemResult itm of
-        Api.Success     -> pick "✔" "v" `with` succColor
-        Api.Failure _ _ -> pick "✘" "x" `with` failColor
-        Api.Pending _ _ -> pick "‐" "-" `with` pendColor
+        Api.Success     -> succColor (pick "✔" "v")
+        Api.Failure _ _ -> failColor (pick "✘" "x")
+        Api.Pending _ _ -> pendColor (pick "‐" "-")
 
     pendingBlock =
       case Api.itemResult itm of
@@ -158,8 +157,8 @@ data Info = Info
   , ifMultiline :: Lines
   }
 
-mapInfoParts :: (WithFormat -> WithFormat) -> Info -> Info
-mapInfoParts f (Info one multi) = Info (first f one) (first f multi)
+mapInfoParts :: ApplyWrap -> Info -> Info
+mapInfoParts f (Info one multi) = Info (f one) (f multi)
 
 mkInfo :: ItemInfo -> Info
 mkInfo str =
@@ -182,7 +181,7 @@ mkInfo str =
 mkPending :: Maybe PendingString -> Lines
 mkPending mb =
   value $
-  (extraInd<>) . mapAnn pendColor . chunk <$>
+  (extraInd<>) . pendColor . chunk <$>
   case mb of
     Nothing  -> ["# PENDING"]
     Just str ->
@@ -196,8 +195,7 @@ mkPending mb =
 mkDuration :: Api.Seconds -> Chunks
 mkDuration (Api.Seconds secs) =
   when' Api.printTimes $
-  maybeEmpty (chunk <$> mbStr)
-    `with`   infoColor
+  maybeEmpty (infoColor . chunk <$> mbStr)
   where
     mbStr = case floor (secs * 1000) of
       0  -> Nothing
@@ -218,20 +216,25 @@ laminate pad label body =
 -- Api shorthands
 --
 
+type ApplyWrap = ∀ b. Parts WithFormat b -> Parts WithFormat b
+
+wrapPartsInside :: (FormatM () -> FormatM ()) -> ApplyWrap
+wrapPartsInside f = mapAnn (<> Endo f)
+
 
 --- Color ---
 
-type Color = WithFormat -> WithFormat
+type Color = ApplyWrap
 
 infoColor :: Color
 pendColor :: Color
 succColor :: Color
 failColor :: Color
 
-infoColor = (<> Endo Api.withInfoColor   )
-pendColor = (<> Endo Api.withPendingColor)
-succColor = (<> Endo Api.withSuccessColor)
-failColor = (<> Endo Api.withFailColor   )
+infoColor = wrapPartsInside Api.withInfoColor
+pendColor = wrapPartsInside Api.withPendingColor
+succColor = wrapPartsInside Api.withSuccessColor
+failColor = wrapPartsInside Api.withFailColor
 
 
 --- Verbosity ---
@@ -252,8 +255,8 @@ verbosityM = Api.printTimes <&> \case
 
 --- Expert ---
 
-unlessExpert :: WithFormat -> WithFormat
-unlessExpert = (<> Endo Api.unlessExpert)
+unlessExpert :: ApplyWrap
+unlessExpert = wrapPartsInside Api.unlessExpert
 
 
 --- Progress ---

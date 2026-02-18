@@ -117,8 +117,8 @@ itemStarted req = "[ ] " ++ (firstLine req)
 itemDone :: Req -> Api.Item -> Lines
 itemDone req itm =
      embedLines (laminate' box req `append` (duration<>infoStr))
-  <> pendingBlock
-  <> infoBlock
+  <> (boxIndent pendingBlock)
+  <> (boxIndent infoBlock)
   where
     box                 = "["<>m<>"] "
     boxIndentation      = "    "
@@ -138,6 +138,7 @@ itemDone req itm =
         _               -> empty
 
     laminate' = laminate boxIndentation
+    boxIndent = mapEachLine (fromString (boxIndentation)<>)
 
 progress :: Api.Progress -> TransientString
 progress (now,total) = "[" ++ str ++ "]"
@@ -165,17 +166,16 @@ resolveInfo = \case ([]       ,_        )  ->  (e         ,e'        )
                     (ls       ,_        )  ->  (e         ,asBlock ls)
   where
     asStr   = unlessExpert .             infoColor . fmtStr
-    asBlock = unlessExpert . mapEachLine(infoColor . fmtBlock) . embedLines
+    asBlock = unlessExpert . mapEachLine infoColor . embedLines
 
     fmtStr s = " (" <> s <> ")"
-    fmtBlock s = "  " <> s
 
     e  = empty
     e' = embed []
 
 mkPending :: Maybe PendingString -> Lines
 mkPending mb =
-  mapEachLine ((extraInd<>) . pendColor) . embedLines $
+  mapEachLine pendColor . embedLines $
   case mb of
     Nothing  -> ["# PENDING"]
     Just str ->
@@ -183,8 +183,6 @@ mkPending mb =
         "           "
         "# PENDING: "
         str
-  where
-    extraInd = "    "
 
 mkDuration :: Api.Seconds -> Chunks
 mkDuration (Api.Seconds secs) =

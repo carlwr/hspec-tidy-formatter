@@ -74,6 +74,10 @@ embedLines = embed
 lines' :: String -> [Chunks]
 lines' = map string . lines
 
+mapEachLine :: (Chunks->Chunks) -> Lines -> Lines
+mapEachLine =
+    fmap @(Effable FormatM)
+  . fmap @[]
 
 --
 -- Output
@@ -160,8 +164,8 @@ resolveInfo = \case ([]       ,_        )  ->  (e         ,e'        )
                     ([l]      ,Verbose  )  ->  (asStr l   ,e'        )
                     (ls       ,_        )  ->  (e         ,asBlock ls)
   where
-    asStr   = unlessExpert .                    infoColor . fmtStr
-    asBlock = unlessExpert . embedLines . fmap (infoColor . fmtBlock)
+    asStr   = unlessExpert .             infoColor . fmtStr
+    asBlock = unlessExpert . mapEachLine(infoColor . fmtBlock) . embedLines
 
     fmtStr s = " (" <> s <> ")"
     fmtBlock s = "  " <> s
@@ -171,7 +175,7 @@ resolveInfo = \case ([]       ,_        )  ->  (e         ,e'        )
 
 mkPending :: Maybe PendingString -> Lines
 mkPending mb =
-  embedLines . (fmap ((extraInd<>) . pendColor)) $
+  mapEachLine ((extraInd<>) . pendColor) . embedLines $
   case mb of
     Nothing  -> ["# PENDING"]
     Just str ->

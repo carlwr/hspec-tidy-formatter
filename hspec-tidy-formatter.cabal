@@ -44,6 +44,7 @@ flag suppress-module-prefixes
 -- library:
 
 common dep_base       { build-depends: base             >= 4.17.2.1 && < 5 }
+common dep_effable    { build-depends: effable          >= 0.3.0.0  && <0.4}
 common dep_hspec-api  { build-depends: hspec-api        >= 2.11.8   && < 3 }
 
 
@@ -101,6 +102,7 @@ library
   import:
     , defaults
     , dep_base
+    , dep_effable
     , dep_hspec-api
   hs-source-dirs: src
   autogen-modules: Paths_hspec_tidy_formatter
@@ -108,7 +110,6 @@ library
   exposed-modules:
       Test.Hspec.TidyFormatter
       Test.Hspec.TidyFormatter.Internal
-      Test.Hspec.TidyFormatter.Internal.Parts
 
 test-suite readme
   import:

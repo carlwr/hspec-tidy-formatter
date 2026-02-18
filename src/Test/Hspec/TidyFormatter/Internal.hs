@@ -12,16 +12,15 @@ module Test.Hspec.TidyFormatter.Internal
 
 ) where
 
-import Test.Hspec.TidyFormatter.Internal.Parts
+import Data.Effable
 
 import Test.Hspec.Api.Formatters.V3 qualified as Api
 import Test.Hspec.Api.Formatters.V3 (Formatter, FormatM)
-import Data.Monoid (Endo (..))
 import Control.Monad (when)
 import Data.String (fromString, IsString)
 import Data.List (genericReplicate)
 import Data.Functor ((<&>))
-
+import Control.Applicative (Alternative(empty))
 
 
 --
@@ -66,14 +65,17 @@ Neither ever contains \n-s.
 Note: the [Chunks] of 'Lines' is embedded as well to allow monadic FormatM conditions to influence whether the newlines implied by [Chunks] are printed or not, i.e. to influence whether a 'Lines' value (including its implied newlines) are printed or not.
 -}
 
-type Chunks = Parts (Endo (FormatM ())) String
-type Lines  = Parts (Endo (FormatM ())) [Chunks]
+type Chunks = Effable FormatM String
+type Lines  = Effable FormatM [Chunks]
 
 chunk :: String -> Chunks
 chunk = string . filter (/='\n')
 
+embedLines :: [Chunks] -> Lines
+embedLines = embed
+
 line :: Chunks -> Lines
-line chunks = value [chunks]
+line chunks = embedLines [chunks]
 
 
 --
@@ -161,7 +163,7 @@ mkInfo str =
   case lines str of
     []  -> z
     [l] -> z{ ifOneline   = byAction verbosityM (asStr . chunk $ l) }
-    ls  -> z{ ifMultiline = value (asBlock . chunk<$> ls) }
+    ls  -> z{ ifMultiline = embedLines (asBlock . chunk<$> ls) }
   where
     z       = Info empty empty
 
@@ -175,7 +177,7 @@ mkInfo str =
 
 mkPending :: Maybe PendingString -> Lines
 mkPending mb =
-  value $
+  embedLines $
   (extraInd<>) . pendColor . chunk <$>
   case mb of
     Nothing  -> ["# PENDING"]
@@ -190,11 +192,9 @@ mkPending mb =
 mkDuration :: Api.Seconds -> Chunks
 mkDuration (Api.Seconds secs) =
   when' Api.printTimes $
-  maybeEmpty (infoColor . chunk <$> mbStr)
-  where
-    mbStr = case floor (secs * 1000) of
-      0  -> Nothing
-      ms -> Just $ ("  (" ++ show ms ++ "ms)")
+  case floor (secs * 1000) of
+    0  -> ""
+    ms -> infoColor . string $ "  (" ++ show ms ++ "ms)"
 
 {- | Join two columns horizontally.
 
@@ -211,10 +211,7 @@ laminate pad label body =
 -- Api shorthands
 --
 
-type ApplyWrap = ∀ b. Parts (Endo (FormatM ())) b -> Parts (Endo (FormatM ())) b
-
-wrapPartsInside :: (FormatM () -> FormatM ()) -> ApplyWrap
-wrapPartsInside f = mapAnn (<> Endo f)
+type ApplyWrap = ∀ b. Effable FormatM b -> Effable FormatM b
 
 
 --- Color ---
@@ -226,10 +223,10 @@ pendColor :: Color
 succColor :: Color
 failColor :: Color
 
-infoColor = wrapPartsInside Api.withInfoColor
-pendColor = wrapPartsInside Api.withPendingColor
-succColor = wrapPartsInside Api.withSuccessColor
-failColor = wrapPartsInside Api.withFailColor
+infoColor = wrapInside Api.withInfoColor
+pendColor = wrapInside Api.withPendingColor
+succColor = wrapInside Api.withSuccessColor
+failColor = wrapInside Api.withFailColor
 
 
 --- Verbosity ---
@@ -251,7 +248,7 @@ verbosityM = Api.printTimes <&> \case
 --- Expert ---
 
 unlessExpert :: ApplyWrap
-unlessExpert = wrapPartsInside Api.unlessExpert
+unlessExpert = wrapInside Api.unlessExpert
 
 
 --- Progress ---

@@ -4,17 +4,25 @@
 # usage:
 #   $0 <formatter>
 
-set -ue
+emulate zsh
+set -ue -o pipefail
 
+# parse arguments:
 formatter=$1
-component=readme-example
+
+# parameters:
+component=${RUNTEST_COMPONENT:-readme-example}
+
+
+# implementation
+# --------------
 
 color () print -nP %F\{$1\}$2%f
 nl    () print
 prompt() color 7 '$  '
 cursor() print '█'
 
-printCommands() {
+print-commands() {
   case $formatter in
     (tidy)
             prompt && color 8 '# stack test --test-arguments=--format=tidy'
@@ -35,16 +43,18 @@ printCommands() {
   nl
   }
 
-runCabal() {
+run-cabal() {
+  local args=( -v0 --test-options=--format=${formatter} )
+
   export BUILDKITE=true
     # hack/workaround: makes hspec disable transient output
-  cabal test ${component} -v0 \
-	  --test-options=--format=${formatter}
+
+  cabal test ${component} ${args}
   }
 
 # --------------
-printCommands
-runCabal
+print-commands
+run-cabal
 nl
 prompt && cursor
 # --------------

@@ -5,47 +5,51 @@
 #   $0       OUTFILE
 #   $0 --txt OUTFILE
 #
-# --txt:
-#   don't run `freeze`, instead capture stdout as plaintext
+# arguments:
+#   --txt       don't run `freeze`, instead capture stdout as plaintext
 #
-# OUTFILE:
-#   file to write
-#   must match /.*(tidy|checks).*/
+#   OUTFILE     file to write
+#               must match /.*(tidy|checks).*/
 
 emulate zsh
 set -ue -o pipefail
 
-# constants:
-heightPxPerLine=27
-width=690
-runTest=./scripts/montage/runTest
-
 # parse arguments:
-integer txt=0 ; [[ $1 == --txt ]] && txt=1 && shift
-OUTFILE=$1
+integer txt=0; [[ $1 == --txt ]] && txt=1 && shift
+outfile=$1
+
+# parameters:
+height_n=27
+width_px=690
+cmdToRun=./scripts/montage/runTest
 
 
 # implementation
 # --------------
 
-outdir=${OUTFILE:h}
+outdir=${outfile:h}
 height=$((
-  nLines = 1 + $(${runTest} checks | wc -l),
-  heightPxPerLine * nLines
+  nLines = 1 + $(${cmdToRun} checks | wc -l),
+  height_n * nLines
   ))
-formatter=$(<<< $OUTFILE grep -oE 'tidy|checks')
-invokeCmd=${runTest}\ ${formatter}
-freezeArgs=(
-  --width     ${width}
-  --height    ${height}
-  --font.size 22
-  --execute   ${invokeCmd}
-  --theme     github-dark
-  --output    ${OUTFILE}
-  )
+formatter=$(<<< $outfile grep -oE 'tidy|checks')
+invokeCmd=${cmdToRun}\ ${formatter}
+
+captureImage()
+  freeze  \
+    --width     ${width_px}   \
+    --height    ${height}     \
+    --font.size 22            \
+    --theme     github-dark   \
+    --execute   ${invokeCmd}  \
+    --output    ${outfile}
+
+captureText() {
+  eval ${invokeCmd}
+  } >${outfile}
 
 mkdir -p ${outdir}
 if ! ((txt))
-then freeze ${freezeArgs}
-else eval ${invokeCmd} >${OUTFILE}
+then captureImage
+else captureText
 fi

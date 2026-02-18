@@ -10,6 +10,15 @@
 #
 #   OUTFILE     file to write
 #               must match /.*(tidy|checks).*/
+#
+# description:
+#   capture terminal output resulting from running
+#
+#       ${CAPT_CMDTORUN} <formatter>
+#
+#   where <formatter> is what /.*(tidy|checks).*/ on OUTFILE matches
+#   (no such match is an error)
+
 
 emulate zsh
 set -ue -o pipefail
@@ -19,9 +28,9 @@ integer txt=0; [[ $1 == --txt ]] && txt=1 && shift
 outfile=$1
 
 # parameters:
-height_n=27
-width_px=690
-cmdToRun=./scripts/montage/runTest
+height_n=${CAPT_HEIGHT_N:-27}   # image height (px) per line of text
+width_px=${CAPT_WIDTH_PX:-690}  # image width (px, absolute)
+cmdToRun=${CAPT_CMDTORUN:-'./scripts/montage/runTest'}
 
 
 # implementation

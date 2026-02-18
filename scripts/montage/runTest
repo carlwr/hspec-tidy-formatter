@@ -3,6 +3,11 @@
 #
 # usage:
 #   $0 <formatter>
+#
+# environment:
+#   NO_COLOR
+#     * is respected by the printing of invocation commands
+#     * is translated to the appropriate hspec option
 
 emulate zsh
 set -ue -o pipefail
@@ -12,12 +17,17 @@ formatter=$1
 
 # parameters:
 component=${RUNTEST_COMPONENT:-readme-example}
+integer noColor=0; [[ ${NO_COLOR-} != "" ]] && noColor=1
 
 
 # implementation
 # --------------
 
-color () print -nP %F\{$1\}$2%f
+color() {
+  ((noColor)) && print -nP         $2   ||
+                 print -nP %F\{$1\}$2%f
+  }
+
 nl    () print
 prompt() color 7 '$  '
 cursor() print '█'
@@ -45,6 +55,7 @@ print-commands() {
 
 run-cabal() {
   local args=( -v0 --test-options=--format=${formatter} )
+  ((noColor)) && args+=( --test-options=--no-color )
 
   export BUILDKITE=true
     # hack/workaround: makes hspec disable transient output

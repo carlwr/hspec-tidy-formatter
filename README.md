@@ -18,6 +18,85 @@ _A custom [`hspec`] formatter for terminal output._
 </p>
 <br>
 
+<!-- plaintext of montage.png:
+---
+
+$  # stack test --test-arguments=--format=tidy
+$  # cabal test --test-options=--format=tidy
+$  hspec --format=tidy
+
+
+Data.MyLogic.Core.Instances
+  [✔] Functor
+  [✔] Monoid
+  is Applicative-lawful per
+    [✔] Identity
+    [✔] Homomorphism
+    [✔] Interchange
+    [✔] Composition
+
+Data.MyLogic.Evaluator
+  [✔] is consistent
+  [‐] proves this test to fail
+      # PENDING: seems to run forever
+                 ->TODO trouble-shoot
+
+Data.MyLogic.TestUtils.Generator
+  [✔] Hedgehog generator
+      passed 100 tests.
+        n:   0       1% ▏···················
+        n:   1- 4    5% █···················
+        n:   5-19   16% ███▏················
+        n:  20-79   54% ██████████▊·········
+        n:  80-     24% ████▊···············
+
+Finished in 0.0322 seconds
+9 examples, 0 failures, 1 pending
+
+$  █
+
+
+---
+
+$  # stack test
+$  # cabal test
+$  hspec
+
+
+Data.MyLogic.Core.Instances
+  Functor [✔]
+  Monoid [✔]
+  is Applicative-lawful per
+    Identity [✔]
+      passed 100 tests.
+    Homomorphism [✔]
+      passed 100 tests.
+    Interchange [✔]
+      passed 100 tests.
+    Composition [✔]
+      passed 100 tests.
+Data.MyLogic.Evaluator
+  is consistent [✔]
+    passed 100 tests.
+  proves this test to fail [‐]
+    # PENDING: seems to run forever
+    ->TODO trouble-shoot
+Data.MyLogic.TestUtils.Generator
+  Hedgehog generator [✔]
+    passed 100 tests.
+      n:   0       1% ▏···················
+      n:   1- 4    5% █···················
+      n:   5-19   16% ███▏················
+      n:  20-79   54% ██████████▊·········
+      n:  80-     24% ████▊···············
+
+Finished in 0.0294 seconds
+9 examples, 0 failures, 1 pending
+
+$  █
+
+-->
+
 ---
 
 The formatter should work with with any test runner backend. It may be particularly useful with [Hedgehog] tests through [`hspec-hedgehog`]: it omits the _"passed 100 tests."_ otherwise printed after each spec item, yet includes manually added test output (`Hedgehog.collect`, `Hedgehog.label` etc.).

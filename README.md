@@ -82,6 +82,10 @@ spec = it "adds" $ 1+1 `shouldBe` (2::Int)
 
 * supports transient output/progress
 
+* handles multiline spec tree strings gracefully
+  * transient/progress output only prints the first line in case of multiline strings
+  * the eventual non-transient output prints all lines, properly indented
+
 * honors most `hspec` options, including: `--times`, `--no-unicode`, `--no-color`, `--print-cpu-time`, `--print-slow-items=[=N]`
 
 ### Printing of additional text from test runners

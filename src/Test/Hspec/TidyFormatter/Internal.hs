@@ -66,13 +66,8 @@ Neither ever contains \n-s.
 Note: the [Chunks] of 'Lines' is embedded as well to allow monadic FormatM conditions to influence whether the newlines implied by [Chunks] are printed or not, i.e. to influence whether a 'Lines' value (including its implied newlines) are printed or not.
 -}
 
-type WithFormat = Endo (FormatM ())
-
-type Chunks' ann = Parts ann String
-type Lines'  ann = Parts ann [Chunks]
-
-type Chunks = Chunks' WithFormat
-type Lines  = Lines'  WithFormat
+type Chunks = Parts (Endo (FormatM ())) String
+type Lines  = Parts (Endo (FormatM ())) [Chunks]
 
 chunk :: String -> Chunks
 chunk = string . filter (/='\n')
@@ -216,7 +211,7 @@ laminate pad label body =
 -- Api shorthands
 --
 
-type ApplyWrap = ∀ b. Parts WithFormat b -> Parts WithFormat b
+type ApplyWrap = ∀ b. Parts (Endo (FormatM ())) b -> Parts (Endo (FormatM ())) b
 
 wrapPartsInside :: (FormatM () -> FormatM ()) -> ApplyWrap
 wrapPartsInside f = mapAnn (<> Endo f)

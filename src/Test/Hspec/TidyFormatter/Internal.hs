@@ -10,6 +10,10 @@ module Test.Hspec.TidyFormatter.Internal
   -- * Formatter
   tidy
 
+  -- * (to enable doctests:)
+, mapLast
+, append
+
 ) where
 
 import Data.Effable
@@ -311,12 +315,22 @@ joinTuple x =
   , join $ snd <$> x
   )
 
+{-| Map the last element.
+
+>>> mapLast (+1) [1,2,3]
+[1,2,4]
+-}
 mapLast :: (a -> a) -> [a] -> [a]
 mapLast f = go where
   go []     = []
   go [x]    = f x : []
   go (x:xs) = x   : go xs
 
+{-| Append the last item monoidally with the given value.
+
+>>> [[1],[2,3]] `append` [4,5]
+[[1],[2,3,4,5]]
+-}
 append :: Semigroup a => [a] -> a -> [a]
 append xs x = mapLast (<>x) xs
 infixl 3 `append`

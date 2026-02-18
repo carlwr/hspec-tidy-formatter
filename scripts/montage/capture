@@ -54,7 +54,11 @@ captureImage()
     --output    ${outfile}
 
 captureText() {
-  eval ${invokeCmd}
+  print -- ---
+  print
+  eval NO_COLOR=1 ${invokeCmd}
+  print
+  print
   } >${outfile}
 
 mkdir -p ${outdir}

@@ -16,10 +16,11 @@ import Data.Effable
 
 import Test.Hspec.Api.Formatters.V3 qualified as Api
 import Test.Hspec.Api.Formatters.V3 (Formatter, FormatM)
-import Control.Monad (when)
+import Control.Monad (when, join)
 import Data.String (fromString, IsString)
 import Data.List (genericReplicate)
 import Data.Functor ((<&>))
+import Data.Foldable (traverse_)
 import Control.Applicative (Alternative(empty))
 
 
@@ -32,7 +33,7 @@ tidy = Api.Formatter {
   formatterStarted      = nothing
 , formatterDone         = Api.formatterDone Api.checks -- footer, failures
 , formatterGroupDone    = const nothing
-, formatterGroupStarted = \(nst->n,grp)     -> write     n (groupStarted grp)
+, formatterGroupStarted = \(nst->n,grp)     -> write     n (groupStarted n grp)
 , formatterItemStarted  = \(nst->n,req)     -> transient n (itemStarted req)
 , formatterItemDone     = \(nst->n,req) itm -> write     n (itemDone req itm)
 , formatterProgress     = \(nst->n,_  ) prg -> transient n (progress prg)
@@ -48,7 +49,6 @@ tidy = Api.Formatter {
 
 type Group         = String   -- ([Group],Req) == Api.Path
 type Req           = String
-type ItemInfo      = String
 type PendingString = String
 
 
@@ -68,14 +68,11 @@ Note: the [Chunks] of 'Lines' is embedded as well to allow monadic FormatM condi
 type Chunks = Effable FormatM String
 type Lines  = Effable FormatM [Chunks]
 
-chunk :: String -> Chunks
-chunk = string . filter (/='\n')
-
 embedLines :: [Chunks] -> Lines
 embedLines = embed
 
-line :: Chunks -> Lines
-line chunks = embedLines [chunks]
+lines' :: String -> [Chunks]
+lines' = map string . lines
 
 
 --
@@ -86,15 +83,8 @@ type TransientString = String
 
 write :: Nesting -> Lines -> FormatM ()
 write nst =
-  run (run Api.write . vsep . unlines')
-  where
-    unlines' = foldMap mkLine
-    mkLine c = (specIndentation nst <>) (c <> "\n")
-
-    vsep|isLevel0  = ("\n" <>)
-        |otherwise = id
-
-    isLevel0 = nst==0
+  run $ traverse_ $ \l ->
+    run Api.write (specIndentation nst <> l <> "\n")
 
 transient :: Nesting -> TransientString -> FormatM ()
 transient nst str =
@@ -106,8 +96,14 @@ transient nst str =
 -- Handlers
 --
 
-groupStarted :: Group -> Lines
-groupStarted group = line (chunk group)
+groupStarted :: Nesting -> Group -> Lines
+groupStarted nst group =
+  embedLines $
+  if |nst > 0   ->              group'
+     |otherwise -> blankLine <> group'
+  where
+    blankLine = [""]
+    group'    = lines' group
 
 itemStarted :: Req -> TransientString
 itemStarted req = "[ ] " ++ (firstLine req)
@@ -116,14 +112,14 @@ itemStarted req = "[ ] " ++ (firstLine req)
 
 itemDone :: Req -> Api.Item -> Lines
 itemDone req itm =
-     line (box <> chunk req <> duration <> infoStr)
+     embedLines (laminate' box req `append` (duration<>infoStr))
   <> pendingBlock
   <> infoBlock
   where
     box                 = "["<>m<>"] "
+    boxIndentation      = "    "
     duration            = mkDuration      $ Api.itemDuration itm
-    (infoStr,infoBlock) = iTuple . mkInfo $ Api.itemInfo     itm
-    iTuple info         =  (ifOneline info,ifMultiline info)
+    (infoStr,infoBlock) = mkInfo . lines' $ Api.itemInfo     itm
 
     m =
       let pick = ifThenElse Api.outputUnicode in
@@ -137,6 +133,8 @@ itemDone req itm =
         Api.Pending _ s -> mkPending s
         _               -> empty
 
+    laminate' = laminate boxIndentation
+
 progress :: Api.Progress -> TransientString
 progress (now,total) = "[" ++ str ++ "]"
   where
@@ -149,36 +147,31 @@ progress (now,total) = "[" ++ str ++ "]"
 -- Handler helpers
 --
 
-data Info = Info
-  { ifOneline   :: Chunks
-  , ifMultiline :: Lines
-  }
+type InfoLines = [Chunks]
 
-mapInfoParts :: ApplyWrap -> Info -> Info
-mapInfoParts f (Info one multi) = Info (f one) (f multi)
-
-mkInfo :: ItemInfo -> Info
-mkInfo str =
-  mapInfoParts (unlessExpert . infoColor) $
-  case lines str of
-    []  -> z
-    [l] -> z{ ifOneline   = byAction verbosityM (asStr . chunk $ l) }
-    ls  -> z{ ifMultiline = embedLines (asBlock . chunk<$> ls) }
+mkInfo :: InfoLines -> (Chunks,Lines)
+mkInfo i = joinTuple (resolve' <$> embedAction verbosityM)
   where
-    z       = Info empty empty
+    resolve' v = resolveInfo (i,v)
 
-    asStr _ Quiet = empty
-    asStr s _     = fmtStr s
-
-    asBlock s = fmtBlock s
+resolveInfo ::      (InfoLines,Verbosity)  ->  (Chunks    ,Lines     )
+resolveInfo = \case ([]       ,_        )  ->  (e         ,e'        )
+                    ([_]      ,Quiet    )  ->  (e         ,e'        )
+                    ([l]      ,Verbose  )  ->  (asStr l   ,e'        )
+                    (ls       ,_        )  ->  (e         ,asBlock ls)
+  where
+    asStr   = unlessExpert .                    infoColor . fmtStr
+    asBlock = unlessExpert . embedLines . fmap (infoColor . fmtBlock)
 
     fmtStr s = " (" <> s <> ")"
     fmtBlock s = "  " <> s
 
+    e  = empty
+    e' = embed []
+
 mkPending :: Maybe PendingString -> Lines
 mkPending mb =
-  embedLines $
-  (extraInd<>) . pendColor . chunk <$>
+  embedLines . (fmap ((extraInd<>) . pendColor)) $
   case mb of
     Nothing  -> ["# PENDING"]
     Just str ->
@@ -201,10 +194,37 @@ mkDuration (Api.Seconds secs) =
 The first column has @label@ as its first line, and the given padding string as all following lines.
 
 The second column has lines formed by splitting the 'String' argument on '\n's using 'lines'.
+
+=== Illustration
+
+The value 'actual' below, if rendered with a sensible invocation of 'run', would print the same lines as if the lines of 'expected' were printed:
+
+@
+actual :: [Chunks]
+actual =
+  laminate
+    "       "
+    "label: "
+    "BODY-\nCONTENTS\n."
+
+expected :: [String]
+expected =
+  unlines
+    [ "label: BODY-"
+    , "       CONTENTS"
+    , "       ."
+    ]
+@
 -}
-laminate :: String -> String -> String -> [String]
+laminate :: String -> Chunks -> String -> [Chunks]
 laminate pad label body =
-  zipWith (++) (label : repeat pad) (lines body)
+  case lines' body of
+    []     ->    [label]
+    [l]    ->    [label <> l]
+    (l:ls) ->    [label <> l]
+              ++ [pad'  <> l' | l'<-ls]
+  where
+    pad' = string pad
 
 
 --
@@ -282,6 +302,22 @@ whenM :: Monad m => m Bool -> m () -> m ()
 whenM bM action = do
   b <- bM
   when b action
+
+joinTuple :: Monad m => m (m a,m b) -> (m a,m b)
+joinTuple x =
+  ( join $ fst <$> x
+  , join $ snd <$> x
+  )
+
+mapLast :: (a -> a) -> [a] -> [a]
+mapLast f = go where
+  go []     = []
+  go [x]    = f x : []
+  go (x:xs) = x   : go xs
+
+append :: Semigroup a => [a] -> a -> [a]
+append xs x = mapLast (<>x) xs
+infixl 3 `append`
 
 
 --

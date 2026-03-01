@@ -33,7 +33,8 @@ flag doctest
   default: False
   manual: True
 
-flag suppress-module-prefixes
+flag isDev
+  description: development conveniences
   default: False
   manual: True
 
@@ -78,15 +79,15 @@ common defaults
       -Winvalid-haddock
       -Wredundant-bang-patterns
       -Wredundant-strictness-flags
+  if impl(ghc >= 9.8)
+    ghc-options:
+      -Winconsistent-flags
+  if flag(isDev)
+    ghc-options:
       -freverse-errors
       -fshow-hole-matches-of-hole-fits
       -fhide-source-paths
       -fwrite-ide-info
-  if impl(ghc >= 9.8)
-    ghc-options:
-      -Winconsistent-flags
-  if flag(suppress-module-prefixes)
-    ghc-options:
       -dsuppress-module-prefixes
   default-language: GHC2021
   default-extensions:
@@ -174,6 +175,8 @@ test-suite dev-example
     , dep_hspec-hh
     , dep_hh
     , tooldep_hspec-discover
+  if !flag(isDev)
+      buildable: False
   hs-source-dirs:  test/dev-example
   type:            exitcode-stdio-1.0
   main-is:         Spec.hs

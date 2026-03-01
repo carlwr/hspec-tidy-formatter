@@ -175,7 +175,8 @@ test-suite dev-example
     , dep_hspec-hh
     , dep_hh
     , tooldep_hspec-discover
-  if !flag(isDev)
+  -- uses MultilineStrings (ghc-9.12+):
+  if !flag(isDev) || impl(ghc < 9.12.0.0)
       buildable: False
   hs-source-dirs:  test/dev-example
   type:            exitcode-stdio-1.0
@@ -188,6 +189,7 @@ test-suite dev-example
   other-modules:
       ExampleSpec
       Sub.SubSpec
+      Sub.MultilineSpec
       SpecHook
   build-depends:
     , hspec-tidy-formatter

@@ -1,4 +1,4 @@
-module Example.SubSpec
+module Sub.SubSpec
 ( spec
 ) where
 

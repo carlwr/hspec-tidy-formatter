@@ -14,8 +14,11 @@ license:        MIT
 license-file:   LICENSE
 build-type:     Simple
 tested-with:
+    GHC == 9.14.1
     GHC == 9.12.2
     GHC == 9.10.2
+    GHC == 9.8.4
+    GHC == 9.6.7
     GHC == 9.4.8
 extra-doc-files:
     README.md
@@ -129,7 +132,9 @@ test-suite doctest
   import:
     , defaults
     , dep_base
-  if !flag(doctest)
+  -- no solution for 9.14 due to doctest-parallell
+  -- (forcing with --alow-newer causes compilation error)
+  if !flag(doctest) || impl(ghc >= 9.14)
       buildable: False
   hs-source-dirs:  test/doctests
   type:            exitcode-stdio-1.0
@@ -149,6 +154,9 @@ test-suite readme-example
     , dep_hspec-hh
     , dep_hh
     , tooldep_hspec-discover
+  -- no solution for 9.14 (involves hedgehog)
+  if impl(ghc >= 9.14)
+      buildable: False
   hs-source-dirs:  readme-example
   type:            exitcode-stdio-1.0
   main-is:         Spec.hs

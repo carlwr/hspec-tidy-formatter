@@ -68,10 +68,7 @@ f=$(cabal sdist|grep '\.gz') && cabal upload --publish $f
 
 Verify `tested-with` GHC versions:
 ```sh
-mv cabal.project.local{,_}  # disable
-rm -rf dist-newstyle; cabal --with-compiler=ghc-X.X.X --prefer-oldest build
-rm -rf dist-newstyle; cabal --with-compiler=ghc-X.X.X --prefer-oldest test
-mv cabal.project.local{_,}  # re-enable
+./scripts/test-tested-with
 ```
 
 Verify exercising `doctest` flag, with any `cabal.project.local` disabled:

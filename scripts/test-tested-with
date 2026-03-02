@@ -1,0 +1,55 @@
+#! /usr/bin/env zsh
+
+emulate -L zsh
+set -eu -o pipefail
+
+me=${0:t}
+
+help="
+usage:
+  $me
+
+environment:
+  TTW_GHCS
+    if set and non-null, overrides default set of GHC versions to test
+    example:
+      TTW_GHCS='9.12.2 9.10.2' $me
+"
+
+case ${1-} in (-h|--help) <<< $help && exit 0;; esac
+
+ghcs_default=(
+  9.14.1
+  9.12.2
+  9.10.2
+  9.8.4
+  9.6.7
+  9.4.8
+  )
+
+ghcs=( ${=${TTW_GHCS:-$ghcs_default}} )
+
+foreach v ( $ghcs ) {
+  print
+  print "***"
+  print "*** version: $v"
+  print "***"
+  print
+
+  opts=(
+    -v0
+    --with-compiler=ghc-$v
+    --project-file=cabal.project.no-local
+    --prefer-oldest
+    )
+
+  rm -rf dist-newstyle/cache/ \
+         dist-newstyle/build/
+
+  print "\nBUILD..." && cabal $opts                build && print "...OK."
+  print "\nTEST..."  && cabal $opts --enable-tests test  && print "...OK."
+}
+
+print
+print '*** DONE.'
+print

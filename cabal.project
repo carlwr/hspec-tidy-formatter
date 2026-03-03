@@ -1,3 +1,5 @@
 write-ghc-environment-files: always
+  -- necessary for doctest-parallell
+
 index-state: 2025-11-22T00:00:00Z
 packages: .

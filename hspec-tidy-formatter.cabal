@@ -11,6 +11,7 @@ author:         Carl
 maintainer:     Carl
 copyright:      none
 license:        MIT
+license-file:   LICENSE
 build-type:     Simple
 tested-with:
     GHC == 9.12.2
@@ -36,8 +37,18 @@ flag suppress-module-prefixes
   default: False
   manual: True
 
+
+-- dependencies
+-- ------------
+
+-- library:
+
 common dep_base       { build-depends: base             >= 4.17.2.1 && < 5 }
 common dep_hspec-api  { build-depends: hspec-api        >= 2.11.8   && < 3 }
+
+
+-- test components:
+
 common dep_hspec      { build-depends: hspec            >= 2.11.8   && < 3 }
 common dep_hspec-core { build-depends: hspec-core       >= 2.11.8   && < 3 }
 common dep_hspec-hh   { build-depends: hspec-hedgehog   >= 0.3.0.0  && < 1 }
@@ -46,6 +57,10 @@ common dep_hh         { build-depends: hedgehog         >= 1.5      && < 2 }
 common tooldep_hspec-discover
   build-tool-depends:
       hspec-discover:hspec-discover >= 2.11.8 && < 3
+
+
+-- components
+-- ----------
 
 common defaults
   autogen-modules: Paths_hspec_tidy_formatter
@@ -68,12 +83,12 @@ common defaults
       -fshow-hole-matches-of-hole-fits
       -fhide-source-paths
       -fwrite-ide-info
-  if impl(ghc >= 9.8) { ghc-options:
+  if impl(ghc >= 9.8)
+    ghc-options:
       -Winconsistent-flags
-      }
-  if flag(suppress-module-prefixes) { ghc-options:
+  if flag(suppress-module-prefixes)
+    ghc-options:
       -dsuppress-module-prefixes
-      }
   default-language: GHC2021
   default-extensions:
       PartialTypeSignatures

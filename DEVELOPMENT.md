@@ -5,7 +5,6 @@ tested with Cabal version: `3.14.2.0`
 ### Enable project settings suitable for local development
 
 -> create a file:
-
 ```haskell
 --- ./cabal.project.local ---
 import: misc/dev.project
@@ -14,7 +13,6 @@ import: misc/dev.project
 ### Tests
 
 Test commands and what they target:
-
 ```sh
 cabal test doctest       # the actual (few) tests there are
 cabal test dev-example   # example tests suitable for dev iteration
@@ -31,7 +29,6 @@ git add <proj>.cabal
 git commit
 git tag -m 0.0.1 0.0.1    # will tag the latest commit
 git push --tags
-
 ```
 
 Release/upload:
@@ -46,8 +43,7 @@ f=$(cabal sdist|grep '\.gz') && cabal upload           $f  # candidate
 f=$(cabal sdist|grep '\.gz') && cabal upload --publish $f
 ```
 
-Verify a `GHC==X.X.X` version for `<project>.cabal`:
-
+Verify `tested-with` GHC versions:
 ```sh
 mv cabal.project.local{,_}  # disable
 rm -rf dist-newstyle; cabal --with-compiler=ghc-X.X.X --prefer-oldest build

@@ -2,7 +2,7 @@
 
 _A custom [`hspec`] formatter for terminal output._
 
-![GitHub License](https://img.shields.io/github/license/carlwr/hspec-tidy-formatter)
+[![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 ![Hackage Version](https://img.shields.io/hackage/v/hspec-tidy-formatter)
 ![CI](https://img.shields.io/github/actions/workflow/status/carlwr/hspec-tidy-formatter/ci.yml?label=CI)
 
@@ -241,6 +241,15 @@ foreach t (--times --no-times) {
   echo
 } }
 -->
+
+
+## Written by a human
+
+During the development of this package, AI models were used extensively for discussions and feedback. All code and documentation however is authored by me (Carl), a human developer: no text (code; natural language) within this package/repo is direct output from an AI model.
+
+Since I am not a native English speaker, any natural language is likely to feature language quirks. AI models were not asked to identify or rectify such.
+
+The above should not be understood as any opinion or even preference of mine - I both use and value development with higher degrees of AI autonomy than what was used in this project.
 
 
 <!-- links -->

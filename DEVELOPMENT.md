@@ -79,5 +79,11 @@ cabal --project-file=cabal.project.no-local build --flags='hspec-tidy-formatter 
 cabal --project-file=cabal.project.no-local test  --flags='hspec-tidy-formatter +doctest' && echo "OK\n"
 ```
 
+Trigger CI manually:
+```sh
+gh workflow run ci.yml --ref <branch>
+```
+
+
 Re-generate README screenshot:
 * -> see `./scripts/montage/Makefile`

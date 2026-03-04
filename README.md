@@ -4,6 +4,7 @@ _A custom [`hspec`] formatter for terminal output._
 
 ![GitHub License](https://img.shields.io/github/license/carlwr/hspec-tidy-formatter)
 ![Hackage Version](https://img.shields.io/hackage/v/hspec-tidy-formatter)
+![CI](https://img.shields.io/github/actions/workflow/status/carlwr/hspec-tidy-formatter/ci.yml?label=CI)
 
 <br>
 

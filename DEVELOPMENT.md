@@ -51,6 +51,7 @@ vim <proj>.cabal              # edit "version: " field
 git add <proj>.cabal
 git commit -m 'chore: set version to 0.0.1.0'
 git tag -m 0.0.1.0 0.0.1.0    # will tag the latest commit
+git push
 git push --tags
 ```
 
@@ -62,8 +63,8 @@ cabal sdist --list-only
 cabal check
 
 # upload to hackage:
-f=$(cabal sdist|grep '\.gz') && cabal upload           $f  # candidate
-f=$(cabal sdist|grep '\.gz') && cabal upload --publish $f
+f=$(cabal sdist|grep -m1 '\.gz') && cabal upload           $f  # candidate
+f=$(cabal sdist|grep -m1 '\.gz') && cabal upload --publish $f
 ```
 
 Verify `tested-with` GHC versions:

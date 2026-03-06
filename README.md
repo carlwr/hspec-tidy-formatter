@@ -2,9 +2,15 @@
 
 _A custom [`hspec`] formatter for terminal output._
 
-[![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
-![Hackage Version](https://img.shields.io/hackage/v/hspec-tidy-formatter)
-![CI](https://img.shields.io/github/actions/workflow/status/carlwr/hspec-tidy-formatter/ci.yml?label=CI)
+[![License]](./LICENSE)
+[![Hackage Version]](https://hackage.haskell.org/package/hspec-tidy-formatter)
+[![Stackage Nightly]](https://stackage.org/nightly/package/hspec-tidy-formatter)
+[![CI]](https://github.com/carlwr/hspec-tidy-formatter/actions/workflows/ci.yml)
+
+[License]: https://img.shields.io/badge/license-MIT-green
+[Hackage Version]: https://img.shields.io/hackage/v/hspec-tidy-formatter
+[Stackage Nightly]: https://stackage.org/package/hspec-tidy-formatter/badge/nightly
+[CI]: https://img.shields.io/github/actions/workflow/status/carlwr/hspec-tidy-formatter/ci.yml?label=CI
 
 <br>
 

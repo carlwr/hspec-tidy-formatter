@@ -132,7 +132,7 @@ test-suite doctest
   import:
     , defaults
     , dep_base
-  -- no solution for 9.14 due to doctest-parallell
+  -- no solution for 9.14 due to doctest-parallel
   -- (forcing with --alow-newer causes compilation error)
   if !flag(doctest) || impl(ghc >= 9.14)
       buildable: False
